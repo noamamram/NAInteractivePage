@@ -1,0 +1,338 @@
+export const translations = {
+    en: {
+        nav: {
+            home: "Home",
+            about: "About",
+            experience: "Experience",
+            contact: "Contact",
+            arcade: "Arcade",
+            audioOn: "◉ AUDIO_ON",
+            audioOff: "◌ AUDIO_OFF",
+            homeAria: "NA Interactive — Home",
+        },
+        lang: {
+            en: "EN",
+            he: "עב",
+            switchAria: "Switch language",
+        },
+        hero: {
+            sysInit: "[ SYS_INIT // CONNECTION_ESTABLISHED ]",
+            tags: ["UNITY DEVELOPER", "XR ENGINEER", "AI INTEGRATION"],
+            scroll: "↓ SCROLL_TO_CONTINUE ↓",
+        },
+        about: {
+            title: "ABOUT",
+            subtitle: "// OPERATOR_DOSSIER",
+            identityDat: "◉ IDENTITY.dat",
+            bioTxt: "// BIO.txt",
+            fields: {
+                NAME: "NOAM AMRAM",
+                STUDIO: "NA INTERACTIVE",
+                ROLE: "UNITY / XR DEV",
+                BASED: "TEL AVIV, IL",
+                YEARS: "07_ACTIVE",
+                STATUS: "OPEN_TO_WORK",
+            },
+            fieldKeys: {
+                NAME: "NAME",
+                STUDIO: "STUDIO",
+                ROLE: "ROLE",
+                BASED: "BASED",
+                YEARS: "YEARS",
+                STATUS: "STATUS",
+            },
+            bio1:
+                "Unity & XR developer with seven years across military simulation, consumer mobile, and wearable haptics. I architect systems that survive contact with production — object pooling, deterministic netcode, performance budgets that hold at 60 FPS on five-year-old phones.",
+            bio2:
+                "Lead three engineers at Links AI. Previously ran a four-person sim team in IDF Intelligence Corps. I care about training pipelines, AI integration, and the boring parts of XR that make demos feel like products.",
+        },
+        experience: {
+            title: "EXPERIENCE",
+            subtitle: "// FIELD_DEPLOYMENTS",
+            view: "[ VIEW ↗ ]",
+            holoProjector: "◉ HOLO_PROJECTOR",
+            live: "● LIVE",
+            standby: "○ STANDBY",
+            awaitingTarget: "AWAITING_TARGET",
+            hoverHint: "Hover a project to project a 3D asset preview into this chamber.",
+            tapToInspect: "TAP_TO_INSPECT",
+        },
+        projects: [
+            {
+                id: "links",
+                org: "Links AI",
+                role: "Senior Unity Developer",
+                year: "2024 — 2026",
+                summary:
+                    "Lead developer on a real-time multiplayer mobile arcade title. Built core gameplay loops, object-pooling architecture, and AI-driven NPC behaviour using state machines + utility theory.",
+                stack: ["Unity", "C#", "Mirror", "Addressables", "Burst"],
+                kind: "console",
+            },
+            {
+                id: "plectrum",
+                org: "Plectrum LTD",
+                role: "XR & Haptics Engineer",
+                year: "2023 — 2024",
+                summary:
+                    "Designed haptic feedback patterns for a wearable vest paired with VR experiences. Tuned latency-sensitive bluetooth pipelines and authored a Unity SDK consumed by 6 partner studios.",
+                stack: ["Unity XR", "OpenXR", "BLE", "Shader Graph", "DOTS"],
+                kind: "vest",
+            },
+            {
+                id: "idf",
+                org: "IDF Intelligence Corps",
+                role: "Simulation Lead",
+                year: "2020 — 2023",
+                summary:
+                    "Built classified training simulators for analysts using Unity + custom VR rigs. Shipped a deployable course platform now used across multiple training cohorts; led a team of four.",
+                stack: ["Unity", "VR", "Networking", "Hebrew RTL UI"],
+                kind: "vr",
+            },
+        ],
+        modal: {
+            stack: "// STACK",
+            watchDemo: "▶ WATCH_DEMO",
+            github: "⎇ GITHUB ↗",
+        },
+        skills: {
+            header: "// SKILLSET.array[ ]",
+            engage: "⚡ ENGAGE_PHYSICS_ENGINE",
+            disengage: "◌ DISENGAGE",
+            gravityDesktop: "▼ GRAVITY: 9.8 | DRAG: ENABLED | CLICK + TOSS",
+            gravityMobile: "▼ GRAVITY: 9.8 | DRAG: ENABLED | TOUCH + TOSS",
+        },
+        contact: {
+            title: "CONTACT",
+            subtitle: "// OPEN_A_CHANNEL",
+            subjectActive: "◉ SUBJECT_ACTIVE",
+            aimLock: "AIM_LOCK",
+            eyeTrack: "EYE_TRACK: ON",
+            active: "◉ ACTIVE",
+            channelsList: "// CHANNELS.list",
+            desc: "Hover an entry — the operator will point you to the right channel. Pick whichever you prefer.",
+            responseInfo: "ⓘ AVG_RESPONSE_TIME: 4_HOURS // TIMEZONE: GMT+3 // PREF: WHATSAPP",
+            links: {
+                whatsapp: "WHATSAPP",
+                linkedin: "LINKEDIN",
+                email: "EMAIL",
+                phone: "PHONE",
+                github: "GITHUB",
+            },
+        },
+        arcade: {
+            title: "ARCADE",
+            subtitle: "// SIDE_QUEST.exe",
+            incoming: "░░░ INCOMING_TRANSMISSION ░░░",
+            breach: "!! BREACH_DETECTED !!",
+            score: "SCORE",
+            time: "TIME",
+            combo: "COMBO",
+            gameOver: "GAME_OVER",
+            final: "FINAL",
+            playAgain: "▶ PLAY_AGAIN",
+            fire: "▲ FIRE",
+            controlsDesktop: "← → MOVE  •  SPACE SHOOT  •  60 SECONDS",
+            controlsMobile: "TAP CONTROLS BELOW  •  60 SECONDS",
+            controlsMobileLong: "TAP CONTROLS  •  60 SECONDS  •  AVOID THE SPIRES",
+        },
+        footer: {
+            tagline: "immersive solutions & development",
+            endTransmission: "END_OF_TRANSMISSION",
+            copyright: "© 2026 NOAM_AMRAM // NA_INTERACTIVE",
+            builtWith: "BUILT_WITH_THREE.JS + REACT",
+        },
+    },
+    he: {
+        nav: {
+            home: "בית",
+            about: "אודות",
+            experience: "ניסיון",
+            contact: "צור קשר",
+            arcade: "ארקייד",
+            audioOn: "◉ שמע_פועל",
+            audioOff: "◌ שמע_כבוי",
+            homeAria: "NA Interactive — דף הבית",
+        },
+        lang: {
+            en: "EN",
+            he: "עב",
+            switchAria: "החלפת שפה",
+        },
+        hero: {
+            sysInit: "[ אתחול_מערכת // חיבור_הוקם ]",
+            tags: ["מפתח UNITY", "מהנדס XR", "אינטגרציית AI"],
+            scroll: "↓ גלול_להמשך ↓",
+        },
+        about: {
+            title: "אודות",
+            subtitle: "// תיק_מפעיל",
+            identityDat: "◉ זהות.dat",
+            bioTxt: "// ביוגרפיה.txt",
+            fields: {
+                NAME: "נועם עמרם",
+                STUDIO: "NA INTERACTIVE",
+                ROLE: "UNITY / XR",
+                BASED: "תל אביב, ישראל",
+                YEARS: "07_פעיל",
+                STATUS: "פתוח_לעבודה",
+            },
+            fieldKeys: {
+                NAME: "שם",
+                STUDIO: "סטודיו",
+                ROLE: "תפקיד",
+                BASED: "מיקום",
+                YEARS: "שנים",
+                STATUS: "סטטוס",
+            },
+            bio1:
+                "מפתח Unity ו-XR עם שבע שנות ניסיון בסימולציות צבאיות, מובייל צרכני והaptics לביש. אני בונה מערכות שמחזיקות מעמד בפרודקשן — object pooling, netcode דטרמיניסטי ותקציבי ביצועים של 60 FPS גם על מכשירים ישנים.",
+            bio2:
+                "מוביל שלושה מפתחים ב-Links AI. בעבר ניהלתי צוות סימולציה בחיל המודיעין. אני מתמקד בצינורות אימון, אינטגרציית AI והחלקים ה״משעממים״ ב-XR שהופכים דמו למוצר.",
+        },
+        experience: {
+            title: "ניסיון",
+            subtitle: "// פריסות_שטח",
+            view: "[ צפייה ↗ ]",
+            holoProjector: "◉ מקרן_הולוגרפי",
+            live: "● חי",
+            standby: "○ המתנה",
+            awaitingTarget: "ממתין_ליעד",
+            hoverHint: "רחף מעל פרויקט כדי להקרין תצוגת תלת-ממד בתוך התא.",
+            tapToInspect: "הקש_לבדיקה",
+        },
+        projects: [
+            {
+                id: "links",
+                org: "Links AI",
+                role: "מפתח Unity בכיר",
+                year: "2024 — 2026",
+                summary:
+                    "מפתח ראשי במשחק ארקייד מובייל multiplayer בזמן אמת. בניית לולאות משחק, ארכיטקטורת object pooling והתנהגות NPC מונעת AI עם state machines ו-utility theory.",
+                stack: ["Unity", "C#", "Mirror", "Addressables", "Burst"],
+                kind: "console",
+            },
+            {
+                id: "plectrum",
+                org: "Plectrum LTD",
+                role: "מהנדס XR והaptics",
+                year: "2023 — 2024",
+                summary:
+                    "עיצוב דפוסי haptic feedback לאפוד לבישה בשילוב חוויות VR. כיוון pipelines Bluetooth רגישים ל-latency ופיתוח Unity SDK בשימוש 6 סטודיואים.",
+                stack: ["Unity XR", "OpenXR", "BLE", "Shader Graph", "DOTS"],
+                kind: "vest",
+            },
+            {
+                id: "idf",
+                org: "חיל המודיעין",
+                role: "ראש צוות סימולציה",
+                year: "2020 — 2023",
+                summary:
+                    "בניית סימולטורי אימון מסווגים לקציני מודיעין ב-Unity ו-VR מותאם. הוצאה לפועל של פלטפורמת קורסים בשימוש במספר מחזורי הכשרה; ניהול צוות של ארבעה.",
+                stack: ["Unity", "VR", "Networking", "Hebrew RTL UI"],
+                kind: "vr",
+            },
+        ],
+        modal: {
+            stack: "// מחסנית",
+            watchDemo: "▶ צפייה_בדמו",
+            github: "⎇ GITHUB ↗",
+        },
+        skills: {
+            header: "// מערך_מיומנויות[ ]",
+            engage: "⚡ הפעל_מנוע_פיזיקה",
+            disengage: "◌ כבה",
+            gravityDesktop: "▼ כבידה: 9.8 | גרירה: פעילה | לחץ + זרוק",
+            gravityMobile: "▼ כבידה: 9.8 | גרירה: פעילה | מגע + זריקה",
+        },
+        contact: {
+            title: "צור קשר",
+            subtitle: "// פתיחת_ערוץ",
+            subjectActive: "◉ נושא_פעיל",
+            aimLock: "נעילת_מטרה",
+            eyeTrack: "מעקב_עיניים: פעיל",
+            active: "◉ פעיל",
+            channelsList: "// רשימת_ערוצים",
+            desc: "רחף מעל ערוץ — המפעיל יצביע על הדרך הנכונה. בחר/י את מה שנוח לך.",
+            responseInfo: "ⓘ זמן_תגובה_ממוצע: 4 שעות // אזור_זמן: GMT+3 // מועדף: WHATSAPP",
+            links: {
+                whatsapp: "WHATSAPP",
+                linkedin: "LINKEDIN",
+                email: "אימייל",
+                phone: "טלפון",
+                github: "GITHUB",
+            },
+        },
+        arcade: {
+            title: "ארקייד",
+            subtitle: "// משימת_צד.exe",
+            incoming: "░░░ שידור_נכנס ░░░",
+            breach: "!! זוהה_פריצה !!",
+            score: "ניקוד",
+            time: "זמן",
+            combo: "קומבו",
+            gameOver: "סוף_משחק",
+            final: "סופי",
+            playAgain: "▶ שחק_שוב",
+            fire: "▲ ירי",
+            controlsDesktop: "← → תנועה  •  רווח ירי  •  60 שניות",
+            controlsMobile: "הקש על הכפתורים למטה  •  60 שניות",
+            controlsMobileLong: "הקש על הכפתורים  •  60 שניות  •  הימנע ממגדלים",
+        },
+        footer: {
+            tagline: "פתרונות אינטראקטיביים ופיתוח",
+            endTransmission: "סוף_שידור",
+            copyright: "© 2026 NOAM_AMRAM // NA_INTERACTIVE",
+            builtWith: "נבנה_עם THREE.JS + REACT",
+        },
+    },
+};
+
+export function getProjects(lang) {
+    return translations[lang]?.projects ?? translations.en.projects;
+}
+
+export const CONTACT_LINK_HREFS = [
+    {
+        id: "whatsapp",
+        handle: "+972 50-000-0000",
+        href: "https://wa.me/972500000000",
+        icon: "✺",
+        color: "#25D366",
+    },
+    {
+        id: "linkedin",
+        handle: "/in/noamamram",
+        href: "https://linkedin.com/in/noamamram",
+        icon: "in",
+        color: "#0A66C2",
+    },
+    {
+        id: "email",
+        handle: "noam@amram.dev",
+        href: "mailto:noam@amram.dev",
+        icon: "✉",
+        color: "#4fc3f7",
+    },
+    {
+        id: "phone",
+        handle: "+972 50-000-0000",
+        href: "tel:+972500000000",
+        icon: "☎",
+        color: "#ff6b35",
+    },
+    {
+        id: "github",
+        handle: "/noamamram",
+        href: "https://github.com/noamamram",
+        icon: "◈",
+        color: "#e8edf5",
+    },
+];
+
+export function getContactLinks(lang) {
+    const labels = translations[lang]?.contact?.links ?? translations.en.contact.links;
+    return CONTACT_LINK_HREFS.map((link) => ({
+        ...link,
+        label: labels[link.id] ?? link.id.toUpperCase(),
+    }));
+}
