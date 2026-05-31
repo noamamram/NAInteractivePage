@@ -1,7 +1,16 @@
 import { useRef, useEffect, useState, useCallback } from "react";
 import * as THREE from "three";
 import { useLanguage, LanguageSwitcher } from "./i18n/LanguageProvider";
-import { getProjects, getContactLinks } from "./i18n/translations";
+import { getProjects, getContactLinks, getSkills } from "./i18n/translations";
+import {
+    IndexedSlash,
+    IndexedTag,
+    LtrSpan,
+    MixedText,
+    mirrorTranslateX,
+    physicalEdge,
+    SectionNumber,
+} from "./i18n/bidi";
 
 // ============================================================================
 // DESIGN TOKENS — NA INTERACTIVE BRAND
@@ -116,6 +125,12 @@ function GlobalStyles() {
         background: ${C.bg};
         display: block !important;
         text-align: initial;
+      }
+      html[dir="rtl"] {
+        text-align: start;
+      }
+      html[dir="rtl"] .mono {
+        letter-spacing: 0.12em;
       }
       ::selection { background: ${C.cyan}; color: ${C.bg}; }
       /* nothing may exceed the viewport on any device — kills edge slivers at the source */
@@ -908,7 +923,7 @@ function HeroParticles({ mouseRef, isMobile }) {
 // COMPONENT: HERO SECTION
 // ============================================================================
 function Hero({ mouseRef, isMobile }) {
-    const { t } = useLanguage();
+    const { t, dir } = useLanguage();
     return (
         <section
             id="home"
@@ -943,7 +958,7 @@ function Hero({ mouseRef, isMobile }) {
                     maxWidth: 1100,
                     margin: "0 auto",
                     width: "100%",
-                    direction: "ltr",
+                    direction: dir,
                 }}
             >
                 <div
@@ -956,7 +971,7 @@ function Hero({ mouseRef, isMobile }) {
                         opacity: 0.7,
                     }}
                 >
-                    {t("hero.sysInit")}
+                    <MixedText dir={dir}>{t("hero.sysInit")}</MixedText>
                 </div>
                 <h1
                     className="mono"
@@ -997,7 +1012,7 @@ function Hero({ mouseRef, isMobile }) {
                 >
                     {t("hero.tags").map((tag, i) => (
                         <div
-                            key={tag}
+                            key={`${i}-${tag}`}
                             className="mono"
                             style={{
                                 fontSize: 12,
@@ -1008,7 +1023,12 @@ function Hero({ mouseRef, isMobile }) {
                                 background: "rgba(30,136,229,0.03)",
                             }}
                         >
-                            <span style={{ color: C.cyan }}>0{i + 1}.</span> {tag}
+                            <IndexedTag
+                                index={i + 1}
+                                label={tag}
+                                dir={dir}
+                                numberStyle={{ color: "#1e88e5" }}
+                            />
                         </div>
                     ))}
                 </div>
@@ -1021,7 +1041,7 @@ function Hero({ mouseRef, isMobile }) {
                         letterSpacing: "0.3em",
                     }}
                 >
-                    {t("hero.scroll")}
+                    <MixedText dir={dir}>{t("hero.scroll")}</MixedText>
                 </div>
             </div>
         </section>
@@ -1233,7 +1253,7 @@ function ProjectHologram({ kind, isMobile }) {
 // COMPONENT: PORTFOLIO SECTION
 // ============================================================================
 function Portfolio({ onOpen, muted, isMobile }) {
-    const { t, lang } = useLanguage();
+    const { t, lang, dir } = useLanguage();
     const PROJECTS = getProjects(lang);
     const [hovered, setHovered] = useState(null);
 
@@ -1288,13 +1308,14 @@ function Portfolio({ onOpen, muted, isMobile }) {
                                         i === PROJECTS.length - 1 ? `1px solid ${C.border}` : "none",
                                     cursor: "pointer",
                                     transition: "all 0.3s",
-                                    paddingLeft: hovered === p.id ? 24 : 0,
+                                    [physicalEdge("left", dir) === "left" ? "paddingLeft" : "paddingRight"]:
+                                        hovered === p.id ? 24 : 0,
                                 }}
                             >
                                 <div
                                     style={{
                                         position: "absolute",
-                                        left: 0,
+                                        [physicalEdge("left", dir)]: 0,
                                         top: "50%",
                                         transform: "translateY(-50%)",
                                         width: 4,
@@ -1322,7 +1343,11 @@ function Portfolio({ onOpen, muted, isMobile }) {
                                                 marginBottom: 8,
                                             }}
                                         >
-                                            0{i + 1} / {p.year}
+                                            <IndexedSlash
+                                                left={String(i + 1).padStart(2, "0")}
+                                                right={p.year}
+                                                dir={dir}
+                                            />
                                         </div>
                                         <h3
                                             className="mono"
@@ -1334,7 +1359,7 @@ function Portfolio({ onOpen, muted, isMobile }) {
                                                 letterSpacing: "-0.02em",
                                             }}
                                         >
-                                            {p.org}
+                                            <MixedText dir={dir}>{p.org}</MixedText>
                                         </h3>
                                         <div
                                             style={{
@@ -1344,7 +1369,7 @@ function Portfolio({ onOpen, muted, isMobile }) {
                                                 fontWeight: 300,
                                             }}
                                         >
-                                            {p.role}
+                                            <MixedText dir={dir}>{p.role}</MixedText>
                                         </div>
                                     </div>
                                     <div
@@ -1515,7 +1540,7 @@ function Portfolio({ onOpen, muted, isMobile }) {
                                             {t("experience.awaitingTarget")}
                                         </div>
                                         <div style={{ fontSize: 13, fontWeight: 300, maxWidth: 240 }}>
-                                            {t("experience.hoverHint")}
+                                            <MixedText dir={dir}>{t("experience.hoverHint")}</MixedText>
                                         </div>
                                     </div>
                                 )}
@@ -1532,7 +1557,7 @@ function Portfolio({ onOpen, muted, isMobile }) {
 // COMPONENT: PROJECT MODAL
 // ============================================================================
 function ProjectModal({ project, onClose, muted }) {
-    const { t } = useLanguage();
+    const { t, dir } = useLanguage();
     const close = useCallback(() => {
         SFX.close(muted);
         onClose();
@@ -1601,7 +1626,7 @@ function ProjectModal({ project, onClose, muted }) {
                         marginBottom: 8,
                     }}
                 >
-                    {project.year}
+                    <MixedText dir={dir}>{project.year}</MixedText>
                 </div>
                 <h2
                     className="mono"
@@ -1611,7 +1636,7 @@ function ProjectModal({ project, onClose, muted }) {
                         letterSpacing: "-0.02em",
                     }}
                 >
-                    {project.org}
+                    <MixedText dir={dir}>{project.org}</MixedText>
                 </h2>
                 <div
                     style={{
@@ -1621,7 +1646,7 @@ function ProjectModal({ project, onClose, muted }) {
                         fontWeight: 500,
                     }}
                 >
-                    {project.role}
+                    <MixedText dir={dir}>{project.role}</MixedText>
                 </div>
                 <p
                     style={{
@@ -1631,7 +1656,7 @@ function ProjectModal({ project, onClose, muted }) {
                         fontWeight: 300,
                     }}
                 >
-                    {project.summary}
+                    <MixedText dir={dir}>{project.summary}</MixedText>
                 </p>
                 <div
                     className="mono"
@@ -1658,7 +1683,7 @@ function ProjectModal({ project, onClose, muted }) {
                                 letterSpacing: "0.1em",
                             }}
                         >
-                            {s}
+                            <LtrSpan block>{s}</LtrSpan>
                         </span>
                     ))}
                 </div>
@@ -1701,23 +1726,9 @@ function ProjectModal({ project, onClose, muted }) {
 // ============================================================================
 // COMPONENT: PHYSICS SKILLS SANDBOX
 // ============================================================================
-const SKILLS = [
-    "Unity",
-    "C#",
-    "Three.js",
-    "WebXR",
-    "Shaders",
-    "OpenXR",
-    "Networking",
-    "DOTS",
-    "Blender",
-    "Git",
-    "Performance",
-    "AI/ML",
-];
-
 function PhysicsSandbox({ muted, isMobile }) {
-    const { t } = useLanguage();
+    const { t, dir, lang } = useLanguage();
+    const SKILLS = getSkills(lang);
     const [engaged, setEngaged] = useState(false);
     const canvasRef = useRef(null);
     const mutedRef = useRef(muted);
@@ -1953,7 +1964,7 @@ function PhysicsSandbox({ muted, isMobile }) {
             canvas.removeEventListener("pointercancel", onUp);
             window.removeEventListener("pointerup", onUp);
         };
-    }, [engaged, isMobile]);
+    }, [engaged, isMobile, lang]);
 
     return (
         <div style={{ marginTop: 48 }}>
@@ -1973,7 +1984,7 @@ function PhysicsSandbox({ muted, isMobile }) {
                         letterSpacing: "0.25em",
                     }}
                 >
-          {t("skills.header")}
+                    <MixedText dir={dir}>{t("skills.header")}</MixedText>
                 </div>
                 <button
                     onClick={() => {
@@ -2018,7 +2029,7 @@ function PhysicsSandbox({ muted, isMobile }) {
                                 background: "rgba(0,0,0,0.3)",
                             }}
                         >
-                            {s}
+                            <LtrSpan block>{s}</LtrSpan>
                         </span>
                     ))}
                 </div>
@@ -2057,7 +2068,9 @@ function PhysicsSandbox({ muted, isMobile }) {
                             pointerEvents: "none",
                         }}
                     >
-                        {isMobile ? t("skills.gravityMobile") : t("skills.gravityDesktop")}
+                        <MixedText dir={dir}>
+                            {isMobile ? t("skills.gravityMobile") : t("skills.gravityDesktop")}
+                        </MixedText>
                     </div>
                 </div>
             )}
@@ -2285,6 +2298,12 @@ function Avatar({ mouseRef, focusContact, pointTarget, isMobile, pointToward = "
         );
         leftHand.position.y = -0.45;
         leftElbow.add(leftHand);
+        const leftFinger = new THREE.Mesh(
+            new THREE.BoxGeometry(0.04, 0.1, 0.04),
+            skinMat
+        );
+        leftFinger.position.set(0, -0.13, 0.06);
+        leftHand.add(leftFinger);
 
         // === RIGHT ARM (this is the one that points/gestures) ===
         const rightShoulder = new THREE.Group();
@@ -2427,8 +2446,6 @@ function Avatar({ mouseRef, focusContact, pointTarget, isMobile, pointToward = "
             ];
             const sideAnglesLeft = sideAnglesRight.map(mirrorArmAngle);
             // DOWN-mode angles (mobile): arm reaches down-forward toward content below.
-            // sz near 0 (arm hangs down), sx negative tilts the whole arm forward toward camera,
-            // ez slightly bent so the finger juts out toward the viewer/content
             const downAngles = [
                 { sz: 0.3, sx: -1.0, ez: -0.4 },
                 { sz: 0.2, sx: -1.1, ez: -0.5 },
@@ -2437,9 +2454,16 @@ function Avatar({ mouseRef, focusContact, pointTarget, isMobile, pointToward = "
                 { sz: 0.05, sx: -1.4, ez: -0.7 },
             ];
 
-            let target;
             const towardLeft = pointTowardRef.current === "left";
+            const pointShoulder = towardLeft ? leftShoulder : rightShoulder;
+            const pointElbow = towardLeft ? leftElbow : rightElbow;
+            const restShoulder = towardLeft ? rightShoulder : leftShoulder;
+            const restElbow = towardLeft ? rightElbow : leftElbow;
             const sideAngles = towardLeft ? sideAnglesLeft : sideAnglesRight;
+            const leftRest = { sz: 0.05, sx: 0, ez: 0 };
+            const rightRest = { sz: -0.05, sx: 0, ez: 0 };
+
+            let target;
             if (isPointing) {
                 const angles = ptMode === "down" ? downAngles : sideAngles;
                 const idx = Math.max(0, Math.min(angles.length - 1, ptIdx));
@@ -2447,18 +2471,25 @@ function Avatar({ mouseRef, focusContact, pointTarget, isMobile, pointToward = "
             } else if (shouldPoint) {
                 target = ptMode === "down"
                     ? { sz: 0.15, sx: -1.2, ez: -0.55 }
-                    : towardLeft
-                        ? { sz: -1.6, sx: -0.3, ez: 0.3 }
-                        : { sz: 1.6, sx: -0.3, ez: -0.3 };
+                    : sideAngles[2];
             } else {
-                target = { sz: 0.05, sx: 0, ez: 0 }; // arm at side
+                target = null;
             }
 
-            // Faster damping when actively pointing at a button (snappier UX)
             const damp = isPointing ? 0.12 : 0.06;
-            rightShoulder.rotation.z += (target.sz - rightShoulder.rotation.z) * damp;
-            rightShoulder.rotation.x += (target.sx - rightShoulder.rotation.x) * damp;
-            rightElbow.rotation.z += (target.ez - rightElbow.rotation.z) * damp;
+            const applyArm = (shoulder, elbow, angles) => {
+                shoulder.rotation.z += (angles.sz - shoulder.rotation.z) * damp;
+                shoulder.rotation.x += (angles.sx - shoulder.rotation.x) * damp;
+                elbow.rotation.z += (angles.ez - elbow.rotation.z) * damp;
+            };
+
+            if (target) {
+                applyArm(pointShoulder, pointElbow, target);
+                applyArm(restShoulder, restElbow, towardLeft ? rightRest : leftRest);
+            } else {
+                applyArm(leftShoulder, leftElbow, leftRest);
+                applyArm(rightShoulder, rightElbow, rightRest);
+            }
 
             // === HEAD OVERRIDE for down-pointing mode ===
             // Add a downward pitch on top of the mouse-tracked rotation when pointing down
@@ -2470,14 +2501,17 @@ function Avatar({ mouseRef, focusContact, pointTarget, isMobile, pointToward = "
 
             // === IDLE EASTER EGG: tap headset after 7s idle ===
             if (idleTime > 7 && idleTime < 9 && !focusContact.current && !isPointing) {
-                // tap headset gesture - bend right arm up to head (positive Z brings arm up & right)
-                rightShoulder.rotation.z +=
-                    (2.6 - rightShoulder.rotation.z) * 0.08;
-                rightElbow.rotation.z += (-1.8 - rightElbow.rotation.z) * 0.08;
-                rightElbow.rotation.y +=
-                    (Math.sin(t * 8) * 0.3 - rightElbow.rotation.y) * 0.1;
+                const tapShoulder = towardLeft ? leftShoulder : rightShoulder;
+                const tapElbow = towardLeft ? leftElbow : rightElbow;
+                const tapSz = towardLeft ? -2.6 : 2.6;
+                const tapEz = towardLeft ? 1.8 : -1.8;
+                tapShoulder.rotation.z += (tapSz - tapShoulder.rotation.z) * 0.08;
+                tapElbow.rotation.z += (tapEz - tapElbow.rotation.z) * 0.08;
+                tapElbow.rotation.y +=
+                    (Math.sin(t * 8) * 0.3 - tapElbow.rotation.y) * 0.1;
             } else {
-                rightElbow.rotation.y += (0 - rightElbow.rotation.y) * 0.05;
+                pointElbow.rotation.y += (0 - pointElbow.rotation.y) * 0.05;
+                restElbow.rotation.y += (0 - restElbow.rotation.y) * 0.05;
             }
 
             // === Ambient details ===
@@ -2525,7 +2559,7 @@ function Avatar({ mouseRef, focusContact, pointTarget, isMobile, pointToward = "
             });
             renderer.dispose();
         };
-    }, [mouseRef, focusContact, pointTarget, isMobile]);
+    }, [mouseRef, focusContact, pointTarget, isMobile, pointToward]);
 
     return <div ref={mountRef} style={{ width: "100%", height: "100%" }} />;
 }
@@ -2534,7 +2568,7 @@ function Avatar({ mouseRef, focusContact, pointTarget, isMobile, pointToward = "
 // COMPONENT: ABOUT & CONTACT
 // ============================================================================
 function About({ muted, isMobile }) {
-    const { t } = useLanguage();
+    const { t, dir } = useLanguage();
     const identityRows = [
         ["NAME", t("about.fields.NAME")],
         ["STUDIO", t("about.fields.STUDIO")],
@@ -2609,7 +2643,11 @@ function About({ muted, isMobile }) {
                                             textShadow: k === "STATUS" ? `0 0 8px ${C.warmGlow}66` : "none",
                                             textAlign: "end",
                                         }}>
-                                            {v}
+                                            {k === "STUDIO" || k === "ROLE" || k === "YEARS" || k === "STATUS" ? (
+                                                <LtrSpan block>{v}</LtrSpan>
+                                            ) : (
+                                                <MixedText dir={dir}>{v}</MixedText>
+                                            )}
                                         </span>
                                     </div>
                                 </Reveal>
@@ -2630,7 +2668,7 @@ function About({ muted, isMobile }) {
                                 marginBottom: 16,
                             }}
                         >
-              {t("about.bioTxt")}
+              <MixedText dir={dir}>{t("about.bioTxt")}</MixedText>
                         </div>
                         <p
                             style={{
@@ -2641,7 +2679,7 @@ function About({ muted, isMobile }) {
                                 margin: 0,
                             }}
                         >
-                            {t("about.bio1")}
+                            <MixedText dir={dir}>{t("about.bio1")}</MixedText>
                         </p>
                     </Reveal>
                     <Reveal variant="fade-up" delay={300}>
@@ -2654,11 +2692,11 @@ function About({ muted, isMobile }) {
                                 marginTop: 18,
                             }}
                         >
-                            {t("about.bio2")}
+                            <MixedText dir={dir}>{t("about.bio2")}</MixedText>
                         </p>
                     </Reveal>
 
-                    <Reveal variant="scale" delay={400}>
+                    <Reveal variant="scale" delay={350}>
                         <PhysicsSandbox muted={muted} isMobile={isMobile} />
                     </Reveal>
                 </div>
@@ -2817,9 +2855,13 @@ function Contact({ mouseRef, muted, isMobile }) {
                                     <>
                                         <span>{t("contact.subjectActive")}</span>
                                         <span>
-                                            {hoveredIdx !== null
-                                                ? `${t("contact.aimLock")}: ${CONTACT_LINKS[hoveredIdx].label}`
-                                                : t("contact.eyeTrack")}
+                                            {hoveredIdx !== null ? (
+                                                <MixedText dir={dir}>
+                                                    {`${t("contact.aimLock")}: ${CONTACT_LINKS[hoveredIdx].label}`}
+                                                </MixedText>
+                                            ) : (
+                                                t("contact.eyeTrack")
+                                            )}
                                         </span>
                                     </>
                                 )}
@@ -2882,7 +2924,7 @@ function Contact({ mouseRef, muted, isMobile }) {
                                 lineHeight: 1.6,
                             }}
                         >
-                            {t("contact.desc")}
+                            <MixedText dir={dir}>{t("contact.desc")}</MixedText>
                         </p>
 
                         <div style={{ display: "flex", flexDirection: "column", gap: isMobile ? 14 : 12 }}>
@@ -2912,7 +2954,7 @@ function Contact({ mouseRef, muted, isMobile }) {
                                                 padding: isMobile ? "12px 10px" : "20px 22px",
                                                 border: `1px solid ${isHover ? c.color : C.border}`,
                                                 background: isHover
-                                                    ? `linear-gradient(90deg, ${c.color}22, transparent)`
+                                                    ? `linear-gradient(${dir === "rtl" ? "270deg" : "90deg"}, ${c.color}22, transparent)`
                                                     : "rgba(0, 0, 0, 0.25)",
                                                 textDecoration: "none",
                                                 color: C.text,
@@ -2928,7 +2970,7 @@ function Contact({ mouseRef, muted, isMobile }) {
                                             <div
                                                 style={{
                                                     position: "absolute",
-                                                    left: 0,
+                                                    [physicalEdge("left", dir)]: 0,
                                                     top: 0,
                                                     bottom: 0,
                                                     width: 3,
@@ -2970,7 +3012,11 @@ function Contact({ mouseRef, muted, isMobile }) {
                                                         transition: "color 0.25s",
                                                     }}
                                                 >
-                                                    0{idx + 1} / {c.label}
+                                                    <IndexedSlash
+                                                        left={String(idx + 1).padStart(2, "0")}
+                                                        right={c.label}
+                                                        dir={dir}
+                                                    />
                                                 </div>
                                                 <div
                                                     style={{
@@ -2982,7 +3028,7 @@ function Contact({ mouseRef, muted, isMobile }) {
                                                         whiteSpace: "nowrap",
                                                     }}
                                                 >
-                                                    {c.handle}
+                                                    <LtrSpan>{c.handle}</LtrSpan>
                                                 </div>
                                             </div>
                                             {/* arrow */}
@@ -2992,7 +3038,9 @@ function Contact({ mouseRef, muted, isMobile }) {
                                                     fontSize: 14,
                                                     color: isHover ? c.color : C.textDim,
                                                     transition: "all 0.25s",
-                                                    transform: isHover ? "translateX(4px)" : "translateX(0)",
+                                                    transform: isHover
+                                                        ? `translateX(${mirrorTranslateX(4, dir)}px)`
+                                                        : "translateX(0)",
                                                 }}
                                             >
                                                 ↗
@@ -3015,7 +3063,7 @@ function Contact({ mouseRef, muted, isMobile }) {
                                 lineHeight: 1.6,
                             }}
                         >
-                            {t("contact.responseInfo")}
+                            <MixedText dir={dir}>{t("contact.responseInfo")}</MixedText>
                         </div>
                     </div>
                 </Reveal>
@@ -4162,6 +4210,7 @@ function Arcade({ onClose, muted, isMobile, embedded = false }) {
 // COMPONENT: SECTION HEADER (reusable)
 // ============================================================================
 function SectionHeader({ number, title, subtitle }) {
+    const { dir } = useLanguage();
     return (
         <div>
             <div
@@ -4173,7 +4222,7 @@ function SectionHeader({ number, title, subtitle }) {
                     marginBottom: 8,
                 }}
             >
-                {subtitle}
+                <MixedText dir={dir}>{subtitle}</MixedText>
             </div>
             <div
                 style={{
@@ -4192,7 +4241,7 @@ function SectionHeader({ number, title, subtitle }) {
                         letterSpacing: "0.2em",
                     }}
                 >
-                    {number}.
+                    <SectionNumber number={number} />
                 </span>
                 <h2
                     className="mono"
@@ -4203,7 +4252,7 @@ function SectionHeader({ number, title, subtitle }) {
                         color: C.text,
                     }}
                 >
-                    {title}
+                    <MixedText dir={dir}>{title}</MixedText>
                 </h2>
             </div>
         </div>
@@ -4214,7 +4263,7 @@ function SectionHeader({ number, title, subtitle }) {
 // COMPONENT: FOOTER
 // ============================================================================
 function Footer() {
-    const { t } = useLanguage();
+    const { t, dir } = useLanguage();
     return (
         <footer
             style={{
@@ -4265,7 +4314,7 @@ function Footer() {
                             display: "inline-block",
                         }}
                     />
-                    {t("footer.endTransmission")}
+                    <MixedText dir={dir}>{t("footer.endTransmission")}</MixedText>
                 </div>
             </div>
 
@@ -4285,8 +4334,8 @@ function Footer() {
                     gap: 12,
                 }}
             >
-                <span>{t("footer.copyright")}</span>
-                <span>{t("footer.builtWith")}</span>
+                <LtrSpan>{t("footer.copyright")}</LtrSpan>
+                <LtrSpan>{t("footer.builtWith")}</LtrSpan>
             </div>
         </footer>
     );
