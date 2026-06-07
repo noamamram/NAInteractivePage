@@ -11,6 +11,13 @@ import {
     physicalEdge,
     SectionNumber,
 } from "./i18n/bidi";
+import {
+    setupHologramRenderer,
+    loadModelByKind,
+    createHologramAnimator,
+} from "./hologramModels";
+import Avatar from "./Avatar";
+import { ensureFontStylesheet, FONT_BODY, FONT_DISPLAY } from "./siteFonts";
 
 // ============================================================================
 // DESIGN TOKENS — NA INTERACTIVE BRAND
@@ -38,17 +45,10 @@ const C = {
     warmGlow: "#ff8c42",                        // softer warm for gradients
 };
 
-const FONT_DISPLAY = "'Space Mono', ui-monospace, monospace";
-const FONT_BODY = "'IBM Plex Sans', system-ui, sans-serif";
-
 const LOGO_SRC = "/logo.png";
 
 // Game / gesture UI stays screen-relative (LTR) even when page is RTL.
 const GAME_CONTROLS_LTR = { direction: "ltr" };
-
-function mirrorArmAngle({ sz, sx, ez }) {
-    return { sz: -sz, sx, ez: -ez };
-}
 
 // ============================================================================
 // FONT INJECTION + GLOBAL STYLES
@@ -85,11 +85,7 @@ function GlobalStyles() {
             m.setAttribute("content", content);
         });
 
-        const link = document.createElement("link");
-        link.rel = "stylesheet";
-        link.href =
-            "https://fonts.googleapis.com/css2?family=Space+Mono:wght@400;700&family=IBM+Plex+Sans:wght@300;400;500;600&display=swap";
-        document.head.appendChild(link);
+        ensureFontStylesheet();
 
         const style = document.createElement("style");
         style.textContent = `
@@ -210,6 +206,59 @@ function GlobalStyles() {
         outline: none;
       }
       .gamebtn:focus, .gamebtn:active { outline: none; }
+      @keyframes engage-pulse {
+        0%, 100% {
+          box-shadow: 0 0 14px ${C.orange}55, 0 4px 0 ${C.orange}88;
+        }
+        50% {
+          box-shadow: 0 0 28px ${C.orange}aa, 0 4px 0 ${C.orange}88;
+        }
+      }
+      @keyframes engage-hint-blink {
+        0%, 100% { opacity: 1; }
+        50% { opacity: 0.4; }
+      }
+      @keyframes engage-arrow-nudge {
+        0%, 100% { transform: translateX(0); }
+        50% { transform: translateX(3px); }
+      }
+      @keyframes engage-arrow-nudge-rtl {
+        0%, 100% { transform: translateX(0); }
+        50% { transform: translateX(-3px); }
+      }
+      html[dir="rtl"] .engage-hint-arrow {
+        animation-name: engage-arrow-nudge-rtl;
+      }
+      .engage-btn {
+        position: relative;
+        transition: transform 0.14s ease, box-shadow 0.14s ease, background 0.14s ease, color 0.14s ease;
+      }
+      .engage-btn:not(.is-live) {
+        animation: engage-pulse 2s ease-in-out infinite;
+      }
+      .engage-btn:not(.is-live):hover {
+        transform: translateY(-2px) scale(1.04);
+        animation: none;
+        box-shadow: 0 0 34px ${C.orange}cc, 0 6px 0 ${C.orange};
+      }
+      .engage-btn:not(.is-live):active {
+        transform: translateY(2px) scale(0.97);
+        animation: none;
+        box-shadow: 0 0 10px ${C.orange}66, 0 1px 0 ${C.orange}66;
+      }
+      .engage-btn.is-live:hover {
+        background: ${C.orange}18 !important;
+        box-shadow: 0 0 12px ${C.orange}44;
+      }
+      .engage-hint {
+        animation: engage-hint-blink 1.5s ease-in-out infinite;
+        pointer-events: none;
+        user-select: none;
+      }
+      .engage-hint-arrow {
+        display: inline-block;
+        animation: engage-arrow-nudge 1.2s ease-in-out infinite;
+      }
       .mono { font-family: ${FONT_DISPLAY}; letter-spacing: -0.01em; }
       .grid-bg {
         background-image:
@@ -223,7 +272,6 @@ function GlobalStyles() {
     `;
         document.head.appendChild(style);
         return () => {
-            document.head.removeChild(link);
             document.head.removeChild(style);
         };
     }, []);
@@ -1052,199 +1100,100 @@ function Hero({ mouseRef, isMobile }) {
 // COMPONENT: HOLOGRAPHIC PROJECT PREVIEW (Three.js)
 // Different procedural asset per project
 // ============================================================================
+function disposeHologramRoot(root) {
+    root.traverse((o) => {
+        if (o.geometry) o.geometry.dispose();
+        if (o.material) {
+            if (Array.isArray(o.material)) o.material.forEach((m) => m.dispose());
+            else o.material.dispose();
+        }
+    });
+}
+
 function ProjectHologram({ kind, isMobile }) {
     const mountRef = useRef(null);
+    const ctxRef = useRef(null);
+
     useEffect(() => {
         const mount = mountRef.current;
         if (!mount) return;
-        const w = mount.clientWidth;
-        const h = mount.clientHeight;
 
-        const scene = new THREE.Scene();
-        const camera = new THREE.PerspectiveCamera(45, w / h, 0.1, 100);
-        camera.position.set(0, 0.5, 5);
+        const { scene, camera, renderer, group } = setupHologramRenderer(mount, isMobile);
+        let raf = 0;
+        let tick = () => {};
 
-        const renderer = new THREE.WebGLRenderer({ antialias: !isMobile, alpha: true });
-        renderer.setPixelRatio(Math.min(window.devicePixelRatio, isMobile ? 1.5 : 2));
-        renderer.setSize(w, h);
-        mount.appendChild(renderer.domElement);
-
-        // Lighting
-        scene.add(new THREE.AmbientLight(0x444466, 0.6));
-        const k = new THREE.DirectionalLight(0x1e88e5, 1.2);
-        k.position.set(2, 3, 4);
-        scene.add(k);
-        const r = new THREE.PointLight(0x4fc3f7, 1, 10);
-        r.position.set(-2, -1, 2);
-        scene.add(r);
-
-        const group = new THREE.Group();
-        scene.add(group);
-
-        // Build different assets per kind
-        const matCyan = new THREE.MeshStandardMaterial({
-            color: 0x1e88e5,
-            emissive: 0x003344,
-            metalness: 0.7,
-            roughness: 0.3,
-            wireframe: false,
-        });
-        const matWire = new THREE.MeshBasicMaterial({
-            color: 0x1e88e5,
-            wireframe: true,
-            transparent: true,
-            opacity: 0.4,
-        });
-        const matOrange = new THREE.MeshStandardMaterial({
-            color: 0x4fc3f7,
-            emissive: 0x330011,
-            metalness: 0.6,
-            roughness: 0.4,
-        });
-        const matDark = new THREE.MeshStandardMaterial({
-            color: 0x1a1a22,
-            metalness: 0.8,
-            roughness: 0.3,
-        });
-
-        if (kind === "console") {
-            // Game console: rounded box with screen + buttons
-            const body = new THREE.Mesh(new THREE.BoxGeometry(2.2, 1.3, 0.35), matDark);
-            group.add(body);
-            const screen = new THREE.Mesh(new THREE.BoxGeometry(1.5, 0.85, 0.05), matCyan);
-            screen.position.z = 0.18;
-            group.add(screen);
-            // d-pad
-            const dpad = new THREE.Mesh(new THREE.BoxGeometry(0.18, 0.5, 0.06), matOrange);
-            dpad.position.set(-0.85, 0, 0.2);
-            group.add(dpad);
-            const dpad2 = new THREE.Mesh(new THREE.BoxGeometry(0.5, 0.18, 0.06), matOrange);
-            dpad2.position.set(-0.85, 0, 0.2);
-            group.add(dpad2);
-            // buttons
-            [-0.1, 0.1].forEach((dx) => {
-                [-0.1, 0.1].forEach((dy) => {
-                    const b = new THREE.Mesh(
-                        new THREE.CylinderGeometry(0.06, 0.06, 0.06, 12),
-                        matCyan
-                    );
-                    b.rotation.x = Math.PI / 2;
-                    b.position.set(0.85 + dx, dy, 0.2);
-                    group.add(b);
-                });
-            });
-            // wireframe overlay
-            const wf = new THREE.Mesh(new THREE.BoxGeometry(2.3, 1.4, 0.4), matWire);
-            group.add(wf);
-        } else if (kind === "vest") {
-            // Haptic vest: torso shape
-            const torso = new THREE.Mesh(
-                new THREE.BoxGeometry(1.8, 2.2, 0.6),
-                matDark
-            );
-            group.add(torso);
-            // shoulder cuts
-            const cut1 = new THREE.Mesh(
-                new THREE.BoxGeometry(0.5, 0.5, 0.7),
-                new THREE.MeshBasicMaterial({ color: 0x0a0a0c })
-            );
-            cut1.position.set(-1.15, 0.85, 0);
-            group.add(cut1);
-            const cut2 = cut1.clone();
-            cut2.position.x = 1.15;
-            group.add(cut2);
-            // haptic nodes (glowing dots in grid)
-            for (let i = 0; i < 5; i++) {
-                for (let j = 0; j < 4; j++) {
-                    const dot = new THREE.Mesh(
-                        new THREE.SphereGeometry(0.06, 8, 8),
-                        j % 2 === 0 ? matCyan : matOrange
-                    );
-                    dot.position.set(-0.65 + j * 0.43, 0.8 - i * 0.4, 0.31);
-                    group.add(dot);
-                }
-            }
-            // wireframe
-            const wf = new THREE.Mesh(
-                new THREE.BoxGeometry(1.9, 2.3, 0.7),
-                matWire
-            );
-            group.add(wf);
-        } else if (kind === "vr") {
-            // Retro VR headset
-            const main = new THREE.Mesh(new THREE.BoxGeometry(2.4, 1.2, 0.9), matDark);
-            group.add(main);
-            // lens covers
-            const lens1 = new THREE.Mesh(
-                new THREE.CylinderGeometry(0.4, 0.4, 0.15, 24),
-                matCyan
-            );
-            lens1.rotation.x = Math.PI / 2;
-            lens1.position.set(-0.55, 0, 0.5);
-            group.add(lens1);
-            const lens2 = lens1.clone();
-            lens2.position.x = 0.55;
-            group.add(lens2);
-            // strap
-            const strap = new THREE.Mesh(
-                new THREE.TorusGeometry(0.9, 0.08, 8, 24, Math.PI),
-                matOrange
-            );
-            strap.rotation.z = Math.PI / 2;
-            strap.position.set(0, 0, -0.3);
-            group.add(strap);
-            // antenna
-            const ant = new THREE.Mesh(
-                new THREE.CylinderGeometry(0.02, 0.02, 0.5, 8),
-                matOrange
-            );
-            ant.position.set(0, 0.85, 0);
-            group.add(ant);
-            const antBall = new THREE.Mesh(
-                new THREE.SphereGeometry(0.08, 12, 12),
-                matCyan
-            );
-            antBall.position.set(0, 1.15, 0);
-            group.add(antBall);
-            // wireframe
-            const wf = new THREE.Mesh(new THREE.BoxGeometry(2.5, 1.3, 1), matWire);
-            group.add(wf);
-        }
-
-        // Floor grid (hologram base)
-        const gridGeom = new THREE.PlaneGeometry(6, 6, 12, 12);
-        const gridMat = new THREE.MeshBasicMaterial({
-            color: 0x1e88e5,
-            wireframe: true,
-            transparent: true,
-            opacity: 0.15,
-        });
-        const grid = new THREE.Mesh(gridGeom, gridMat);
-        grid.rotation.x = -Math.PI / 2;
-        grid.position.y = -1.5;
-        scene.add(grid);
-
-        let raf;
-        let t = 0;
         const animate = () => {
-            t += 0.01;
-            group.rotation.y = t;
-            group.position.y = Math.sin(t * 1.5) * 0.1;
+            tick(group);
             renderer.render(scene, camera);
             raf = requestAnimationFrame(animate);
         };
         animate();
 
+        const onResize = () => {
+            const nw = mount.clientWidth;
+            const nh = mount.clientHeight;
+            if (!nw || !nh) return;
+            camera.aspect = nw / nh;
+            camera.updateProjectionMatrix();
+            renderer.setSize(nw, nh);
+        };
+        window.addEventListener("resize", onResize);
+
+        ctxRef.current = { group, setTick: (fn) => { tick = fn; } };
+
         return () => {
             cancelAnimationFrame(raf);
+            window.removeEventListener("resize", onResize);
             mount.removeChild(renderer.domElement);
             scene.traverse((o) => {
                 if (o.geometry) o.geometry.dispose();
-                if (o.material) o.material.dispose();
+                if (o.material) {
+                    if (Array.isArray(o.material)) o.material.forEach((m) => m.dispose());
+                    else o.material.dispose();
+                }
             });
             renderer.dispose();
+            ctxRef.current = null;
         };
-    }, [kind, isMobile]);
+    }, [isMobile]);
+
+    useEffect(() => {
+        if (!kind) return;
+
+        let cancelled = false;
+        let retryRaf = 0;
+
+        const swapModel = () => {
+            const ctx = ctxRef.current;
+            if (!ctx) {
+                retryRaf = requestAnimationFrame(swapModel);
+                return;
+            }
+
+            const { group, setTick } = ctx;
+
+            while (group.children.length > 0) {
+                const child = group.children[0];
+                group.remove(child);
+                disposeHologramRoot(child);
+            }
+
+            loadModelByKind(kind)
+                .then((modelState) => {
+                    if (cancelled || !modelState?.root) return;
+                    group.add(modelState.root);
+                    setTick(createHologramAnimator(kind, modelState));
+                })
+                .catch(() => {});
+        };
+
+        swapModel();
+
+        return () => {
+            cancelled = true;
+            cancelAnimationFrame(retryRaf);
+        };
+    }, [kind]);
 
     return <div ref={mountRef} style={{ width: "100%", height: "100%" }} />;
 }
@@ -1256,6 +1205,7 @@ function Portfolio({ onOpen, muted, isMobile }) {
     const { t, lang, dir } = useLanguage();
     const PROJECTS = getProjects(lang);
     const [hovered, setHovered] = useState(null);
+    const [holoKind, setHoloKind] = useState(PROJECTS[0]?.kind ?? "shirt");
 
     return (
         <section
@@ -1292,12 +1242,17 @@ function Portfolio({ onOpen, muted, isMobile }) {
                                 onMouseEnter={() => {
                                     if (!isMobile) {
                                         setHovered(p.id);
+                                        setHoloKind(p.kind);
                                         SFX.glitch(muted);
                                     }
                                 }}
                                 onMouseLeave={() => !isMobile && setHovered(null)}
                                 onClick={() => {
                                     SFX.open(muted);
+                                    if (!isMobile) {
+                                        setHovered(p.id);
+                                        setHoloKind(p.kind);
+                                    }
                                     onOpen(p);
                                 }}
                                 style={{
@@ -1517,9 +1472,8 @@ function Portfolio({ onOpen, muted, isMobile }) {
                                 </span>
                             </div>
                             <div style={{ flex: 1, position: "relative" }}>
-                                {hovered ? (
-                                    <ProjectHologram kind={PROJECTS.find((p) => p.id === hovered).kind} isMobile={isMobile} />
-                                ) : (
+                                <ProjectHologram kind={holoKind} isMobile={isMobile} />
+                                {!hovered && (
                                     <div
                                         style={{
                                             position: "absolute",
@@ -1531,6 +1485,8 @@ function Portfolio({ onOpen, muted, isMobile }) {
                                             color: C.textDim,
                                             textAlign: "center",
                                             padding: 24,
+                                            background: "rgba(10, 14, 20, 0.72)",
+                                            zIndex: 2,
                                         }}
                                     >
                                         <div
@@ -1556,7 +1512,7 @@ function Portfolio({ onOpen, muted, isMobile }) {
 // ============================================================================
 // COMPONENT: PROJECT MODAL
 // ============================================================================
-function ProjectModal({ project, onClose, muted }) {
+function ProjectModal({ project, onClose, muted, isMobile }) {
     const { t, dir } = useLanguage();
     const close = useCallback(() => {
         SFX.close(muted);
@@ -1648,6 +1604,7 @@ function ProjectModal({ project, onClose, muted }) {
                 >
                     <MixedText dir={dir}>{project.role}</MixedText>
                 </div>
+
                 <p
                     style={{
                         color: C.textDim,
@@ -1687,6 +1644,38 @@ function ProjectModal({ project, onClose, muted }) {
                         </span>
                     ))}
                 </div>
+
+                {project.kind && (
+                    <div
+                        style={{
+                            marginTop: 28,
+                            height: isMobile ? 200 : 260,
+                            border: `1px solid ${C.border}`,
+                            background:
+                                "linear-gradient(180deg, rgba(30,136,229,0.06), rgba(79,195,247,0.02))",
+                            position: "relative",
+                            overflow: "hidden",
+                        }}
+                        className="scanline"
+                    >
+                        <div
+                            className="mono"
+                            style={{
+                                position: "absolute",
+                                top: 10,
+                                left: 12,
+                                fontSize: 9,
+                                color: C.cyan,
+                                letterSpacing: "0.2em",
+                                zIndex: 2,
+                            }}
+                        >
+                            ◉ HOLO_{project.kind.toUpperCase()}
+                        </div>
+                        <ProjectHologram kind={project.kind} isMobile={isMobile} />
+                    </div>
+                )}
+
                 <div style={{ display: "flex", gap: 12, marginTop: 32 }}>
                     <button
                         className="mono"
@@ -1986,26 +1975,50 @@ function PhysicsSandbox({ muted, isMobile }) {
                 >
                     <MixedText dir={dir}>{t("skills.header")}</MixedText>
                 </div>
-                <button
-                    onClick={() => {
-                        SFX.engage(muted);
-                        setEngaged((v) => !v);
-                    }}
-                    className="mono"
+                <div
                     style={{
-                        background: engaged ? "transparent" : C.orange,
-                        color: engaged ? C.orange : C.bg,
-                        border: `1px solid ${C.orange}`,
-                        padding: "8px 16px",
-                        fontSize: 10,
-                        letterSpacing: "0.2em",
-                        cursor: "pointer",
-                        fontWeight: 700,
-                        boxShadow: engaged ? "none" : `0 0 20px ${C.orange}66`,
+                        display: "flex",
+                        flexDirection: "column",
+                        alignItems: physicalEdge(dir, "end"),
+                        gap: 6,
                     }}
                 >
-                    {engaged ? t("skills.disengage") : t("skills.engage")}
-                </button>
+                    <button
+                        type="button"
+                        onClick={() => {
+                            SFX.engage(muted);
+                            setEngaged((v) => !v);
+                        }}
+                        className={`mono engage-btn${engaged ? " is-live" : ""}`}
+                        aria-pressed={engaged}
+                        title={engaged ? t("skills.disengage") : t("skills.engageHint")}
+                        style={{
+                            background: engaged ? "transparent" : C.orange,
+                            color: engaged ? C.orange : C.bg,
+                            border: `1px solid ${C.orange}`,
+                            padding: "10px 18px",
+                            fontSize: 10,
+                            letterSpacing: "0.2em",
+                            cursor: "pointer",
+                            fontWeight: 700,
+                            boxShadow: engaged ? "none" : `0 0 20px ${C.orange}66`,
+                        }}
+                    >
+                        {engaged ? t("skills.disengage") : t("skills.engage")}
+                    </button>
+                    {!engaged && (
+                        <span
+                            className="mono engage-hint engage-hint-arrow"
+                            style={{
+                                fontSize: 9,
+                                color: C.orange,
+                                letterSpacing: "0.18em",
+                            }}
+                        >
+                            <MixedText dir={dir}>{t("skills.engageHint")}</MixedText>
+                        </span>
+                    )}
+                </div>
             </div>
             {!engaged ? (
                 <div
@@ -2013,7 +2026,11 @@ function PhysicsSandbox({ muted, isMobile }) {
                         display: "flex",
                         flexWrap: "wrap",
                         gap: 10,
-                        padding: "20px 0",
+                        padding: "20px 16px",
+                        border: `1px dashed ${C.borderHot}`,
+                        borderRadius: 2,
+                        background: `linear-gradient(180deg, ${C.orange}08 0%, transparent 100%)`,
+                        position: "relative",
                     }}
                 >
                     {SKILLS.map((s, i) => (
@@ -2078,491 +2095,6 @@ function PhysicsSandbox({ muted, isMobile }) {
     );
 }
 
-// ============================================================================
-// COMPONENT: 3D AVATAR (Procedural low-poly character with VR headset)
-// ============================================================================
-function Avatar({ mouseRef, focusContact, pointTarget, isMobile, pointToward = "right" }) {
-    const mountRef = useRef(null);
-    const stateRef = useRef({});
-    const pointTowardRef = useRef(pointToward);
-
-    useEffect(() => {
-        pointTowardRef.current = pointToward;
-    }, [pointToward]);
-
-    useEffect(() => {
-        const mount = mountRef.current;
-        if (!mount) return;
-        const w = mount.clientWidth;
-        const h = mount.clientHeight;
-
-        const scene = new THREE.Scene();
-        // For narrow mobile aspects, widen FOV and pull back further so the arm is visible
-        const fov = isMobile ? 60 : 48;
-        const camZ = isMobile ? 7.5 : 6;
-        const camera = new THREE.PerspectiveCamera(fov, w / h, 0.1, 100);
-        camera.position.set(0, 1.3, camZ);
-        camera.lookAt(0, 1.0, 0);
-
-        const renderer = new THREE.WebGLRenderer({ antialias: !isMobile, alpha: true });
-        renderer.setPixelRatio(Math.min(window.devicePixelRatio, isMobile ? 1.5 : 2));
-        renderer.setSize(w, h);
-        mount.appendChild(renderer.domElement);
-
-        // Lighting — moody, cyberpunk
-        scene.add(new THREE.AmbientLight(0x222244, 0.4));
-        const key = new THREE.DirectionalLight(0x1e88e5, 1.3);
-        key.position.set(2, 3, 3);
-        scene.add(key);
-        const rim = new THREE.DirectionalLight(0x4fc3f7, 0.9);
-        rim.position.set(-2, 2, -2);
-        scene.add(rim);
-        const fill = new THREE.PointLight(0xffffff, 0.3, 8);
-        fill.position.set(0, 1.5, 2);
-        scene.add(fill);
-
-        // Materials
-        const skinMat = new THREE.MeshStandardMaterial({
-            color: 0xd9b591,
-            roughness: 0.7,
-            metalness: 0.1,
-            flatShading: true,
-        });
-        const hairMat = new THREE.MeshStandardMaterial({
-            color: 0x2a1f1a,
-            roughness: 0.9,
-            flatShading: true,
-        });
-        const jacketMat = new THREE.MeshStandardMaterial({
-            color: 0x1a1a22,
-            roughness: 0.5,
-            metalness: 0.4,
-            flatShading: true,
-        });
-        const accentMat = new THREE.MeshStandardMaterial({
-            color: 0x1e88e5,
-            emissive: 0x1e88e5,
-            emissiveIntensity: 0.8,
-            roughness: 0.3,
-        });
-        const accentOrange = new THREE.MeshStandardMaterial({
-            color: 0x4fc3f7,
-            emissive: 0x4fc3f7,
-            emissiveIntensity: 0.6,
-            roughness: 0.4,
-        });
-        const headsetMat = new THREE.MeshStandardMaterial({
-            color: 0x0a0a0c,
-            roughness: 0.3,
-            metalness: 0.7,
-            flatShading: true,
-        });
-
-        // Root group
-        const root = new THREE.Group();
-        root.position.y = 0;
-        scene.add(root);
-
-        // === TORSO ===
-        const torsoGroup = new THREE.Group();
-        torsoGroup.position.y = 1;
-        root.add(torsoGroup);
-
-        const torso = new THREE.Mesh(
-            new THREE.BoxGeometry(0.85, 1.0, 0.5),
-            jacketMat
-        );
-        torsoGroup.add(torso);
-
-        // collar accent
-        const collar = new THREE.Mesh(
-            new THREE.BoxGeometry(0.5, 0.08, 0.52),
-            accentMat
-        );
-        collar.position.y = 0.45;
-        torsoGroup.add(collar);
-
-        // chest light
-        const chestLight = new THREE.Mesh(
-            new THREE.CircleGeometry(0.06, 16),
-            accentOrange
-        );
-        chestLight.position.set(0.18, 0.1, 0.251);
-        torsoGroup.add(chestLight);
-
-        // === HEAD GROUP (rotated by mouse) ===
-        const headGroup = new THREE.Group();
-        headGroup.position.set(0, 0.6, 0); // sits on torso
-        torsoGroup.add(headGroup);
-
-        // neck
-        const neck = new THREE.Mesh(
-            new THREE.CylinderGeometry(0.13, 0.15, 0.18, 8),
-            skinMat
-        );
-        neck.position.y = -0.05;
-        headGroup.add(neck);
-
-        // head (boxy, low poly)
-        const head = new THREE.Mesh(
-            new THREE.BoxGeometry(0.5, 0.55, 0.5),
-            skinMat
-        );
-        head.position.y = 0.25;
-        headGroup.add(head);
-
-        // hair (slab on top)
-        const hair = new THREE.Mesh(
-            new THREE.BoxGeometry(0.52, 0.18, 0.52),
-            hairMat
-        );
-        hair.position.y = 0.5;
-        headGroup.add(hair);
-        // hair side tufts
-        const tuft1 = new THREE.Mesh(new THREE.BoxGeometry(0.08, 0.3, 0.5), hairMat);
-        tuft1.position.set(-0.255, 0.36, 0);
-        headGroup.add(tuft1);
-        const tuft2 = tuft1.clone();
-        tuft2.position.x = 0.255;
-        headGroup.add(tuft2);
-
-        // === VR HEADSET ===
-        const headset = new THREE.Group();
-        headset.position.set(0, 0.25, 0);
-        headGroup.add(headset);
-
-        const visor = new THREE.Mesh(
-            new THREE.BoxGeometry(0.58, 0.25, 0.2),
-            headsetMat
-        );
-        visor.position.set(0, 0.04, 0.2);
-        headset.add(visor);
-
-        // glowing lens screens
-        const lens1 = new THREE.Mesh(
-            new THREE.PlaneGeometry(0.14, 0.16),
-            accentMat
-        );
-        lens1.position.set(-0.13, 0.04, 0.301);
-        headset.add(lens1);
-        const lens2 = lens1.clone();
-        lens2.position.x = 0.13;
-        headset.add(lens2);
-
-        // headset strap
-        const strap = new THREE.Mesh(
-            new THREE.TorusGeometry(0.27, 0.025, 6, 16),
-            headsetMat
-        );
-        strap.rotation.x = Math.PI / 2;
-        strap.position.set(0, 0.05, 0.05);
-        strap.scale.set(1, 1, 0.85);
-        headset.add(strap);
-
-        // antenna / sensor
-        const antBase = new THREE.Mesh(
-            new THREE.BoxGeometry(0.06, 0.06, 0.06),
-            headsetMat
-        );
-        antBase.position.set(0.2, 0.2, 0.25);
-        headset.add(antBase);
-        const antLight = new THREE.Mesh(
-            new THREE.SphereGeometry(0.025, 12, 12),
-            accentOrange
-        );
-        antLight.position.set(0.2, 0.27, 0.25);
-        headset.add(antLight);
-
-        // === LEFT ARM (with shoulder, elbow joints) ===
-        const leftShoulder = new THREE.Group();
-        leftShoulder.position.set(-0.45, 0.4, 0);
-        torsoGroup.add(leftShoulder);
-        const leftUpperArm = new THREE.Mesh(
-            new THREE.BoxGeometry(0.18, 0.45, 0.18),
-            jacketMat
-        );
-        leftUpperArm.position.y = -0.225;
-        leftShoulder.add(leftUpperArm);
-        const leftElbow = new THREE.Group();
-        leftElbow.position.y = -0.45;
-        leftShoulder.add(leftElbow);
-        const leftForearm = new THREE.Mesh(
-            new THREE.BoxGeometry(0.15, 0.42, 0.15),
-            jacketMat
-        );
-        leftForearm.position.y = -0.21;
-        leftElbow.add(leftForearm);
-        const leftHand = new THREE.Mesh(
-            new THREE.BoxGeometry(0.14, 0.16, 0.1),
-            skinMat
-        );
-        leftHand.position.y = -0.45;
-        leftElbow.add(leftHand);
-        const leftFinger = new THREE.Mesh(
-            new THREE.BoxGeometry(0.04, 0.1, 0.04),
-            skinMat
-        );
-        leftFinger.position.set(0, -0.13, 0.06);
-        leftHand.add(leftFinger);
-
-        // === RIGHT ARM (this is the one that points/gestures) ===
-        const rightShoulder = new THREE.Group();
-        rightShoulder.position.set(0.45, 0.4, 0);
-        torsoGroup.add(rightShoulder);
-        const rightUpperArm = new THREE.Mesh(
-            new THREE.BoxGeometry(0.18, 0.45, 0.18),
-            jacketMat
-        );
-        rightUpperArm.position.y = -0.225;
-        rightShoulder.add(rightUpperArm);
-        const rightElbow = new THREE.Group();
-        rightElbow.position.y = -0.45;
-        rightShoulder.add(rightElbow);
-        const rightForearm = new THREE.Mesh(
-            new THREE.BoxGeometry(0.15, 0.42, 0.15),
-            jacketMat
-        );
-        rightForearm.position.y = -0.21;
-        rightElbow.add(rightForearm);
-        const rightHand = new THREE.Mesh(
-            new THREE.BoxGeometry(0.14, 0.16, 0.1),
-            skinMat
-        );
-        rightHand.position.y = -0.45;
-        rightElbow.add(rightHand);
-        // pointing finger
-        const finger = new THREE.Mesh(
-            new THREE.BoxGeometry(0.04, 0.1, 0.04),
-            skinMat
-        );
-        finger.position.set(0, -0.13, 0.06);
-        rightHand.add(finger);
-
-        // initial arm rotations (resting at sides)
-        leftShoulder.rotation.z = 0.05;
-        rightShoulder.rotation.z = -0.05;
-
-        // === PLATFORM / PEDESTAL ===
-        const pedestal = new THREE.Mesh(
-            new THREE.CylinderGeometry(0.8, 0.9, 0.08, 16),
-            new THREE.MeshStandardMaterial({
-                color: 0x1a1a22,
-                metalness: 0.8,
-                roughness: 0.4,
-            })
-        );
-        pedestal.position.y = 0.04;
-        root.add(pedestal);
-
-        // glowing ring
-        const ring = new THREE.Mesh(
-            new THREE.TorusGeometry(0.85, 0.015, 8, 32),
-            accentMat
-        );
-        ring.rotation.x = Math.PI / 2;
-        ring.position.y = 0.1;
-        root.add(ring);
-
-        // particles around character
-        const partCount = isMobile ? 40 : 80;
-        const partPos = new Float32Array(partCount * 3);
-        for (let i = 0; i < partCount; i++) {
-            const a = Math.random() * Math.PI * 2;
-            const r = 1.2 + Math.random() * 0.5;
-            partPos[i * 3] = Math.cos(a) * r;
-            partPos[i * 3 + 1] = Math.random() * 2.5;
-            partPos[i * 3 + 2] = Math.sin(a) * r;
-        }
-        const partGeom = new THREE.BufferGeometry();
-        partGeom.setAttribute("position", new THREE.BufferAttribute(partPos, 3));
-        const partMat = new THREE.PointsMaterial({
-            color: 0x1e88e5,
-            size: 0.025,
-            transparent: true,
-            opacity: 0.6,
-            blending: THREE.AdditiveBlending,
-        });
-        const particles = new THREE.Points(partGeom, partMat);
-        root.add(particles);
-
-        stateRef.current = {
-            headGroup,
-            rightShoulder,
-            rightElbow,
-            leftShoulder,
-            leftElbow,
-            torsoGroup,
-            ring,
-            particles,
-            antLight,
-            lens1,
-            lens2,
-        };
-
-        let raf;
-        let t = 0;
-        const animate = () => {
-            t += 0.016;
-            const idleTime = (Date.now() - mouseRef.current.lastMove) / 1000;
-
-            // === HEAD TRACKING ===
-            const targetYaw = mouseRef.current.nx * 0.6;
-            const targetPitch = -mouseRef.current.ny * 0.35;
-            headGroup.rotation.y += (targetYaw - headGroup.rotation.y) * 0.08;
-            headGroup.rotation.x += (targetPitch - headGroup.rotation.x) * 0.08;
-
-            // torso slight follow
-            torsoGroup.rotation.y +=
-                (mouseRef.current.nx * 0.15 - torsoGroup.rotation.y) * 0.05;
-
-            // breathing
-            torsoGroup.position.y = 1 + Math.sin(t * 1.5) * 0.015;
-
-            // === GESTURE LOGIC ===
-            // pointTarget.current is null, a number (index, side mode), or {idx, mode: "down"}
-            // - "side" mode (desktop): arm raises to the right, fan of vertical angles
-            // - "down" mode (mobile): arm extends downward forward, head tilts down too
-            const ptRaw = pointTarget && pointTarget.current;
-            let ptIdx = null;
-            let ptMode = "side";
-            if (ptRaw !== null && ptRaw !== undefined) {
-                if (typeof ptRaw === "object") {
-                    ptIdx = ptRaw.idx;
-                    ptMode = ptRaw.mode || "side";
-                } else {
-                    ptIdx = ptRaw;
-                }
-            }
-            const isPointing = ptIdx !== null;
-            const shouldPoint = isPointing || focusContact.current || idleTime > 7;
-
-            // SIDE-mode angles (desktop): arm fans toward the contact links column.
-            const sideAnglesRight = [
-                { sz: 2.0, sx: -0.5, ez: -0.15 },
-                { sz: 1.8, sx: -0.4, ez: -0.22 },
-                { sz: 1.6, sx: -0.3, ez: -0.28 },
-                { sz: 1.4, sx: -0.2, ez: -0.35 },
-                { sz: 1.2, sx: -0.1, ez: -0.42 },
-            ];
-            const sideAnglesLeft = sideAnglesRight.map(mirrorArmAngle);
-            // DOWN-mode angles (mobile): arm reaches down-forward toward content below.
-            const downAngles = [
-                { sz: 0.3, sx: -1.0, ez: -0.4 },
-                { sz: 0.2, sx: -1.1, ez: -0.5 },
-                { sz: 0.15, sx: -1.2, ez: -0.55 },
-                { sz: 0.1, sx: -1.3, ez: -0.6 },
-                { sz: 0.05, sx: -1.4, ez: -0.7 },
-            ];
-
-            const towardLeft = pointTowardRef.current === "left";
-            const pointShoulder = towardLeft ? leftShoulder : rightShoulder;
-            const pointElbow = towardLeft ? leftElbow : rightElbow;
-            const restShoulder = towardLeft ? rightShoulder : leftShoulder;
-            const restElbow = towardLeft ? rightElbow : leftElbow;
-            const sideAngles = towardLeft ? sideAnglesLeft : sideAnglesRight;
-            const leftRest = { sz: 0.05, sx: 0, ez: 0 };
-            const rightRest = { sz: -0.05, sx: 0, ez: 0 };
-
-            let target;
-            if (isPointing) {
-                const angles = ptMode === "down" ? downAngles : sideAngles;
-                const idx = Math.max(0, Math.min(angles.length - 1, ptIdx));
-                target = angles[idx];
-            } else if (shouldPoint) {
-                target = ptMode === "down"
-                    ? { sz: 0.15, sx: -1.2, ez: -0.55 }
-                    : sideAngles[2];
-            } else {
-                target = null;
-            }
-
-            const damp = isPointing ? 0.12 : 0.06;
-            const applyArm = (shoulder, elbow, angles) => {
-                shoulder.rotation.z += (angles.sz - shoulder.rotation.z) * damp;
-                shoulder.rotation.x += (angles.sx - shoulder.rotation.x) * damp;
-                elbow.rotation.z += (angles.ez - elbow.rotation.z) * damp;
-            };
-
-            if (target) {
-                applyArm(pointShoulder, pointElbow, target);
-                applyArm(restShoulder, restElbow, towardLeft ? rightRest : leftRest);
-            } else {
-                applyArm(leftShoulder, leftElbow, leftRest);
-                applyArm(rightShoulder, rightElbow, rightRest);
-            }
-
-            // === HEAD OVERRIDE for down-pointing mode ===
-            // Add a downward pitch on top of the mouse-tracked rotation when pointing down
-            if (isPointing && ptMode === "down") {
-                // Already-applied mouse-tracked rotation gets blended with a downward look
-                const downPitch = 0.6; // radians: tilt head down to look at content
-                headGroup.rotation.x += (downPitch - headGroup.rotation.x) * 0.08;
-            }
-
-            // === IDLE EASTER EGG: tap headset after 7s idle ===
-            if (idleTime > 7 && idleTime < 9 && !focusContact.current && !isPointing) {
-                const tapShoulder = towardLeft ? leftShoulder : rightShoulder;
-                const tapElbow = towardLeft ? leftElbow : rightElbow;
-                const tapSz = towardLeft ? -2.6 : 2.6;
-                const tapEz = towardLeft ? 1.8 : -1.8;
-                tapShoulder.rotation.z += (tapSz - tapShoulder.rotation.z) * 0.08;
-                tapElbow.rotation.z += (tapEz - tapElbow.rotation.z) * 0.08;
-                tapElbow.rotation.y +=
-                    (Math.sin(t * 8) * 0.3 - tapElbow.rotation.y) * 0.1;
-            } else {
-                pointElbow.rotation.y += (0 - pointElbow.rotation.y) * 0.05;
-                restElbow.rotation.y += (0 - restElbow.rotation.y) * 0.05;
-            }
-
-            // === Ambient details ===
-            ring.rotation.z = t * 0.5;
-            particles.rotation.y = t * 0.2;
-            // particle drift up
-            const ppos = particles.geometry.attributes.position.array;
-            for (let i = 0; i < partCount; i++) {
-                ppos[i * 3 + 1] += 0.008;
-                if (ppos[i * 3 + 1] > 2.5) ppos[i * 3 + 1] = 0;
-            }
-            particles.geometry.attributes.position.needsUpdate = true;
-
-            // antenna light pulse
-            antLight.material.emissiveIntensity = 0.5 + Math.sin(t * 3) * 0.4;
-            // lens flicker on engagement
-            const lensI = (focusContact.current || isPointing) ? 1.2 : 0.7 + Math.sin(t * 4) * 0.1;
-            lens1.material.emissiveIntensity = lensI;
-            lens2.material.emissiveIntensity = lensI;
-
-            renderer.render(scene, camera);
-            raf = requestAnimationFrame(animate);
-        };
-        animate();
-
-        const onResize = () => {
-            const nw = mount.clientWidth;
-            const nh = mount.clientHeight;
-            camera.aspect = nw / nh;
-            camera.updateProjectionMatrix();
-            renderer.setSize(nw, nh);
-        };
-        window.addEventListener("resize", onResize);
-
-        return () => {
-            cancelAnimationFrame(raf);
-            window.removeEventListener("resize", onResize);
-            mount.removeChild(renderer.domElement);
-            scene.traverse((o) => {
-                if (o.geometry) o.geometry.dispose();
-                if (o.material) {
-                    if (Array.isArray(o.material)) o.material.forEach((m) => m.dispose());
-                    else o.material.dispose();
-                }
-            });
-            renderer.dispose();
-        };
-    }, [mouseRef, focusContact, pointTarget, isMobile, pointToward]);
-
-    return <div ref={mountRef} style={{ width: "100%", height: "100%" }} />;
-}
 
 // ============================================================================
 // COMPONENT: ABOUT & CONTACT
@@ -2885,7 +2417,7 @@ function Contact({ mouseRef, muted, isMobile }) {
                                     <span>NA.v3</span>
                                 ) : (
                                     <>
-                                        <span>NA_AVATAR.v3</span>
+                                        <span>NA_AVATAR.glb</span>
                                         <span>RIG: 12_BONES</span>
                                     </>
                                 )}
@@ -4379,6 +3911,7 @@ export default function App() {
                 project={activeProject}
                 onClose={() => setActiveProject(null)}
                 muted={muted}
+                isMobile={isMobile}
             />
         </div>
     );

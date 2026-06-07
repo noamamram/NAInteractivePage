@@ -27,6 +27,7 @@ body {
   overscroll-behavior-x: none;
   background: #0a0e14;
   display: block;
+  font-family: "IBM Plex Sans", system-ui, sans-serif;
 }
 
 #root {

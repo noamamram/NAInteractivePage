@@ -79,7 +79,7 @@ export const translations = {
                     "Product Design",
                     "Meta Quest",
                 ],
-                kind: "vest",
+                kind: "shirt",
             },
             {
                 id: "idf-sim",
@@ -120,7 +120,7 @@ export const translations = {
                     "Requirements",
                     "Integration",
                 ],
-                kind: "vr",
+                kind: "rifle",
             },
         ],
         modal: {
@@ -131,6 +131,7 @@ export const translations = {
         skills: {
             header: "// SKILLSET.array[ ]",
             engage: "⚡ ENGAGE_PHYSICS_ENGINE",
+            engageHint: "▸ CLICK TO ACTIVATE",
             disengage: "◌ DISENGAGE",
             gravityDesktop: "▼ GRAVITY: 9.8 | DRAG: ENABLED | CLICK + TOSS",
             gravityMobile: "▼ GRAVITY: 9.8 | DRAG: ENABLED | TOUCH + TOSS",
@@ -276,7 +277,7 @@ export const translations = {
                     "Product Design",
                     "Meta Quest",
                 ],
-                kind: "vest",
+                kind: "shirt",
             },
             {
                 id: "idf-sim",
@@ -317,7 +318,7 @@ export const translations = {
                     "Requirements",
                     "Integration",
                 ],
-                kind: "vr",
+                kind: "rifle",
             },
         ],
         modal: {
@@ -328,6 +329,7 @@ export const translations = {
         skills: {
             header: "// מערך_מיומנויות[ ]",
             engage: "⚡ הפעל_מנוע_פיזיקה",
+            engageHint: "▸ לחץ להפעלה",
             disengage: "◌ כבה",
             gravityDesktop: "▼ כבידה: 9.8 | גרירה: פעילה | לחץ + זרוק",
             gravityMobile: "▼ כבידה: 9.8 | גרירה: פעילה | מגע + זריקה",
