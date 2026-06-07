@@ -112,7 +112,6 @@ export default function LoadingScreen({
                         display: "flex",
                         alignItems: "center",
                         justifyContent: "center",
-                        filter: `drop-shadow(0 0 20px ${C.cyan}88) drop-shadow(0 0 6px ${C.orange}55)`,
                     }}
                     aria-hidden="true"
                 >

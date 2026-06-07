@@ -26,15 +26,17 @@ export default function Avatar({ mouseRef, focusContact, pointTarget, isMobile, 
         const disposers = [];
         const clock = new THREE.Clock();
 
-        const fov = isMobile ? 58 : 46;
-        const camZ = isMobile ? 5.8 : 4.8;
+        const fov = isMobile ? 52 : 46;
+        const camZ = isMobile ? 5.1 : 4.8;
+        const camPanX = isMobile ? (pointToward === "right" ? -0.22 : 0.22) : 0;
+        const lookPanX = isMobile ? (pointToward === "right" ? 0.14 : -0.14) : 0;
         const w = mount.clientWidth;
         const h = mount.clientHeight;
 
         const scene = new THREE.Scene();
         const camera = new THREE.PerspectiveCamera(fov, w / h, 0.1, 100);
-        camera.position.set(0, isMobile ? 0.92 : 0.96, camZ);
-        camera.lookAt(0, 0.82, 0);
+        camera.position.set(camPanX, isMobile ? 0.92 : 0.96, camZ);
+        camera.lookAt(lookPanX, isMobile ? 0.8 : 0.82, 0);
 
         const renderer = new THREE.WebGLRenderer({ antialias: !isMobile, alpha: true });
         renderer.setPixelRatio(Math.min(window.devicePixelRatio, isMobile ? 1.5 : 2));

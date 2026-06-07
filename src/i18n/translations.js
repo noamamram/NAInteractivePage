@@ -125,8 +125,6 @@ export const translations = {
         ],
         modal: {
             stack: "// STACK",
-            watchDemo: "▶ WATCH_DEMO",
-            github: "⎇ GITHUB ↗",
         },
         skills: {
             header: "// SKILLSET.array[ ]",
@@ -323,8 +321,6 @@ export const translations = {
         ],
         modal: {
             stack: "// מחסנית",
-            watchDemo: "▶ צפייה_בדמו",
-            github: "⎇ GITHUB ↗",
         },
         skills: {
             header: "// מערך_מיומנויות[ ]",

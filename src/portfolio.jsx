@@ -1676,37 +1676,6 @@ function ProjectModal({ project, onClose, muted, isMobile }) {
                     </div>
                 )}
 
-                <div style={{ display: "flex", gap: 12, marginTop: 32 }}>
-                    <button
-                        className="mono"
-                        style={{
-                            background: C.cyan,
-                            color: C.bg,
-                            border: "none",
-                            padding: "12px 24px",
-                            fontSize: 11,
-                            letterSpacing: "0.2em",
-                            cursor: "pointer",
-                            fontWeight: 700,
-                        }}
-                    >
-                        {t("modal.watchDemo")}
-                    </button>
-                    <button
-                        className="mono"
-                        style={{
-                            background: "transparent",
-                            color: C.text,
-                            border: `1px solid ${C.border}`,
-                            padding: "12px 24px",
-                            fontSize: 11,
-                            letterSpacing: "0.2em",
-                            cursor: "pointer",
-                        }}
-                    >
-                        {t("modal.github")}
-                    </button>
-                </div>
             </div>
         </div>
     );
