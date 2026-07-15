@@ -1,7 +1,7 @@
 import { useRef, useEffect, useState, useCallback } from "react";
 import * as THREE from "three";
 import { useLanguage, LanguageSwitcher } from "./i18n/LanguageProvider";
-import { getProjects, getContactLinks, getSkills } from "./i18n/translations";
+import { getProjects, getContactLinks, getSkills, getWorks } from "./i18n/translations";
 import {
     IndexedSlash,
     IndexedTag,
@@ -156,6 +156,50 @@ function GlobalStyles() {
         80% { transform: translate(1px, 1px); }
       }
       .glitch:hover { animation: glitch-shift 0.3s steps(2); }
+      @keyframes scroll-bounce {
+        0%, 100% { transform: translateY(0); opacity: 0.85; }
+        50% { transform: translateY(6px); opacity: 1; }
+      }
+      @keyframes scroll-arrow-pulse {
+        0%, 100% { opacity: 0.5; }
+        50% { opacity: 1; }
+      }
+      .scroll-cue {
+        animation: scroll-bounce 2s ease-in-out infinite;
+        cursor: pointer;
+        color: ${C.orange};
+        text-shadow: 0 0 12px ${C.orange}55;
+        transition: text-shadow 0.2s ease, color 0.2s ease;
+        border: none;
+        background: transparent;
+        padding: 8px 16px;
+      }
+      .scroll-cue:hover {
+        color: ${C.cyan};
+        text-shadow: 0 0 18px ${C.cyan}88;
+      }
+      .hero-tag-line {
+        display: flex;
+        flex-wrap: wrap;
+        justify-content: center;
+        align-items: center;
+        gap: 0;
+        margin-top: 32px;
+      }
+      .hero-tag-item {
+        font-size: 11px;
+        color: ${C.textDim};
+        letter-spacing: 0.18em;
+        padding: 0 14px;
+        user-select: none;
+        pointer-events: none;
+      }
+      .hero-tag-sep {
+        width: 1px;
+        height: 12px;
+        background: ${C.border};
+        flex-shrink: 0;
+      }
       @keyframes explosion-shake {
         0%, 100% { transform: translate(0, 0) rotate(0); }
         10% { transform: translate(-8px, 4px) rotate(-0.5deg); }
@@ -281,7 +325,7 @@ function GlobalStyles() {
 // ============================================================================
 // COMPONENT: NA INTERACTIVE LOGO
 // ============================================================================
-// Uses the brand PNG from /public/logo.png (transparent, square).
+// Uses the brand PNG from /public/logo.png (NA monogram).
 function Logo({ size = 48, glow = false }) {
     return (
         <div
@@ -304,6 +348,8 @@ function Logo({ size = 48, glow = false }) {
                     height: "100%",
                     objectFit: "contain",
                     display: "block",
+                    // Asset ships on black; lighten blends black into the dark site bg.
+                    mixBlendMode: "lighten",
                 }}
                 draggable={false}
             />
@@ -599,12 +645,13 @@ function useHideOnScroll({ threshold = 72, delta = 6 } = {}) {
     return hidden;
 }
 
-function NavBar({ muted, setMuted, isMobile }) {
+function NavBar({ muted, setMuted, isMobile, onNavigate }) {
     const { t } = useLanguage();
     const links = [
         { label: t("nav.home"), id: "home" },
         { label: t("nav.about"), id: "about" },
         { label: t("nav.experience"), id: "experience" },
+        { label: t("nav.projects"), id: "projects" },
         { label: t("nav.contact"), id: "contact" },
         { label: t("nav.arcade"), id: "arcade" },
     ];
@@ -618,9 +665,43 @@ function NavBar({ muted, setMuted, isMobile }) {
 
     const handleNavClick = (id) => {
         SFX.click(muted);
+        onNavigate?.(id);
         scrollToId(id);
         setMenuOpen(false);
     };
+
+    const navLinkBtn = (l) => (
+        <button
+            key={l.id}
+            onClick={() => handleNavClick(l.id)}
+            onMouseEnter={(e) => {
+                SFX.hover(muted);
+                e.target.style.color = C.cyan;
+                e.target.style.borderBottomColor = C.cyan;
+                e.target.style.textShadow = `0 0 8px ${C.cyan}`;
+            }}
+            onMouseLeave={(e) => {
+                e.target.style.color = C.text;
+                e.target.style.borderBottomColor = "transparent";
+                e.target.style.textShadow = "none";
+            }}
+            className="glitch mono"
+            style={{
+                background: "transparent",
+                border: "none",
+                borderBottom: "1px solid transparent",
+                color: C.text,
+                fontSize: 12,
+                letterSpacing: "0.2em",
+                textTransform: "uppercase",
+                padding: "6px 4px",
+                cursor: "pointer",
+                transition: "all 0.2s",
+            }}
+        >
+            {l.label}
+        </button>
+    );
 
     return (
         <nav
@@ -643,55 +724,32 @@ function NavBar({ muted, setMuted, isMobile }) {
                 willChange: "transform",
             }}
         >
-            <button
-                onClick={() => handleNavClick("home")}
-                style={{
-                    background: "transparent",
-                    border: "none",
-                    cursor: "pointer",
-                    padding: 0,
-                    display: "flex",
-                    alignItems: "center",
-                }}
-                aria-label={t("nav.homeAria")}
-            >
-                <BrandMark logoSize={isMobile ? 40 : 48} compact={isMobile} />
-            </button>
+            <div style={{ display: "flex", alignItems: "center", gap: isMobile ? 0 : 28 }}>
+                <button
+                    onClick={() => handleNavClick("home")}
+                    style={{
+                        background: "transparent",
+                        border: "none",
+                        cursor: "pointer",
+                        padding: 0,
+                        display: "flex",
+                        alignItems: "center",
+                        flexShrink: 0,
+                    }}
+                    aria-label={t("nav.homeAria")}
+                >
+                    <BrandMark logoSize={isMobile ? 40 : 48} compact={isMobile} />
+                </button>
+
+                {!isMobile && (
+                    <div style={{ display: "flex", gap: 20, alignItems: "center" }}>
+                        {links.map(navLinkBtn)}
+                    </div>
+                )}
+            </div>
 
             {!isMobile && (
-                <div style={{ display: "flex", gap: 28, alignItems: "center" }}>
-                    {links.map((l) => (
-                        <button
-                            key={l.id}
-                            onClick={() => handleNavClick(l.id)}
-                            onMouseEnter={(e) => {
-                                SFX.hover(muted);
-                                e.target.style.color = C.cyan;
-                                e.target.style.borderBottomColor = C.cyan;
-                                e.target.style.textShadow = `0 0 8px ${C.cyan}`;
-                            }}
-                            onMouseLeave={(e) => {
-                                e.target.style.color = C.text;
-                                e.target.style.borderBottomColor = "transparent";
-                                e.target.style.textShadow = "none";
-                            }}
-                            className="glitch mono"
-                            style={{
-                                background: "transparent",
-                                border: "none",
-                                borderBottom: "1px solid transparent",
-                                color: C.text,
-                                fontSize: 12,
-                                letterSpacing: "0.2em",
-                                textTransform: "uppercase",
-                                padding: "6px 4px",
-                                cursor: "pointer",
-                                transition: "all 0.2s",
-                            }}
-                        >
-                            {l.label}
-                        </button>
-                    ))}
+                <div style={{ display: "flex", gap: 12, alignItems: "center" }}>
                     <LanguageSwitcher
                         compact={false}
                         onSwitch={() => SFX.click(muted)}
@@ -970,8 +1028,9 @@ function HeroParticles({ mouseRef, isMobile }) {
 // ============================================================================
 // COMPONENT: HERO SECTION
 // ============================================================================
-function Hero({ mouseRef, isMobile }) {
+function Hero({ mouseRef, isMobile, muted }) {
     const { t, dir } = useLanguage();
+    const tags = t("hero.tags");
     return (
         <section
             id="home"
@@ -1049,48 +1108,36 @@ function Hero({ mouseRef, isMobile }) {
                         </span>
                     </span>
                 </h1>
-                <div
-                    style={{
-                        marginTop: 32,
-                        display: "flex",
-                        gap: 24,
-                        justifyContent: "center",
-                        flexWrap: "wrap",
-                    }}
-                >
-                    {t("hero.tags").map((tag, i) => (
-                        <div
-                            key={`${i}-${tag}`}
-                            className="mono"
-                            style={{
-                                fontSize: 12,
-                                color: C.textDim,
-                                letterSpacing: "0.25em",
-                                padding: "8px 16px",
-                                border: `1px solid ${C.border}`,
-                                background: "rgba(30,136,229,0.03)",
-                            }}
-                        >
-                            <IndexedTag
-                                index={i + 1}
-                                label={tag}
-                                dir={dir}
-                                numberStyle={{ color: "#1e88e5" }}
-                            />
-                        </div>
+                <div className="hero-tag-line">
+                    {tags.map((tag, i) => (
+                        <span key={`${i}-${tag}`} style={{ display: "contents" }}>
+                            {i > 0 && <span className="hero-tag-sep" aria-hidden="true" />}
+                            <span className="mono hero-tag-item">
+                                <IndexedTag
+                                    index={i + 1}
+                                    label={tag}
+                                    dir={dir}
+                                    numberStyle={{ color: C.textDim, opacity: 0.7 }}
+                                />
+                            </span>
+                        </span>
                     ))}
                 </div>
-                <div
-                    className="mono"
+                <button
+                    type="button"
+                    className="mono scroll-cue"
+                    onClick={() => {
+                        SFX.click(muted);
+                        scrollToId("about");
+                    }}
                     style={{
-                        marginTop: 60,
-                        fontSize: 10,
-                        color: C.textDim,
+                        marginTop: 56,
+                        fontSize: 11,
                         letterSpacing: "0.3em",
                     }}
                 >
                     <MixedText dir={dir}>{t("hero.scroll")}</MixedText>
-                </div>
+                </button>
             </div>
         </section>
     );
@@ -2207,6 +2254,393 @@ function About({ muted, isMobile }) {
 }
 
 // ============================================================================
+// COMPONENT: WORKS PORTFOLIO (project case studies)
+// ============================================================================
+function Works({ onOpen, muted, isMobile }) {
+    const { t, lang, dir } = useLanguage();
+    const WORKS = getWorks(lang);
+
+    return (
+        <section
+            id="projects"
+            style={{
+                position: "relative",
+                padding: isMobile ? "80px 16px" : "120px 32px",
+                maxWidth: 1400,
+                margin: "0 auto",
+            }}
+        >
+            <Reveal variant="glitch">
+                <SectionHeader number="04" title={t("works.title")} subtitle={t("works.subtitle")} />
+            </Reveal>
+
+                <div
+                    style={{
+                        display: "grid",
+                        gridTemplateColumns: isMobile ? "1fr" : "repeat(3, minmax(0, 1fr))",
+                        gap: isMobile ? 20 : 24,
+                        marginTop: isMobile ? 40 : 60,
+                        alignItems: "stretch",
+                        gridAutoRows: isMobile ? "auto" : "1fr",
+                    }}
+                >
+                {WORKS.map((work, i) => (
+                    <Reveal
+                        key={work.id}
+                        variant={i % 2 === 0 ? "fade-up" : "slide-left"}
+                        delay={Math.min(i * 60, 240)}
+                        style={{ height: "100%" }}
+                    >
+                        <button
+                            type="button"
+                            onClick={() => {
+                                SFX.open(muted);
+                                onOpen(work);
+                            }}
+                            className="mono"
+                            style={{
+                                width: "100%",
+                                height: isMobile ? "auto" : 420,
+                                minHeight: isMobile ? 360 : 420,
+                                textAlign: "start",
+                                background: "rgba(13, 19, 32, 0.5)",
+                                border: `1px solid ${C.border}`,
+                                padding: 0,
+                                cursor: "pointer",
+                                color: C.text,
+                                display: "flex",
+                                flexDirection: "column",
+                                transition: "border-color 0.25s, box-shadow 0.25s, transform 0.25s",
+                            }}
+                            onMouseEnter={(e) => {
+                                SFX.hover(muted);
+                                e.currentTarget.style.borderColor = C.borderHot;
+                                e.currentTarget.style.boxShadow = `0 0 24px ${C.cyan}22`;
+                                e.currentTarget.style.transform = "translateY(-3px)";
+                            }}
+                            onMouseLeave={(e) => {
+                                e.currentTarget.style.borderColor = C.border;
+                                e.currentTarget.style.boxShadow = "none";
+                                e.currentTarget.style.transform = "translateY(0)";
+                            }}
+                        >
+                            <div
+                                style={{
+                                    height: isMobile ? 140 : 160,
+                                    flexShrink: 0,
+                                    borderBottom: `1px dashed ${C.border}`,
+                                    background: `linear-gradient(135deg, ${C.brandDark} 0%, rgba(30,136,229,0.06) 100%)`,
+                                    display: "flex",
+                                    alignItems: "center",
+                                    justifyContent: "center",
+                                    position: "relative",
+                                    overflow: "hidden",
+                                }}
+                            >
+                                <div
+                                    style={{
+                                        fontSize: 10,
+                                        letterSpacing: "0.25em",
+                                        color: C.textDim,
+                                    }}
+                                >
+                                    {t("works.noMedia")}
+                                </div>
+                                <div
+                                    style={{
+                                        position: "absolute",
+                                        top: 10,
+                                        left: 10,
+                                        fontSize: 9,
+                                        color: C.cyan,
+                                        letterSpacing: "0.2em",
+                                        padding: "4px 8px",
+                                        border: `1px solid ${C.border}`,
+                                        background: "rgba(10,14,20,0.8)",
+                                    }}
+                                >
+                                    <LtrSpan block>{work.platform}</LtrSpan>
+                                </div>
+                            </div>
+                            <div
+                                style={{
+                                    padding: isMobile ? "16px 14px" : "20px 18px",
+                                    display: "flex",
+                                    flexDirection: "column",
+                                    flex: 1,
+                                    minHeight: 0,
+                                }}
+                            >
+                                <div
+                                    style={{
+                                        fontSize: 10,
+                                        color: C.textDim,
+                                        letterSpacing: "0.2em",
+                                        marginBottom: 8,
+                                    }}
+                                >
+                                    <LtrSpan block>{String(i + 1).padStart(2, "0")}</LtrSpan>
+                                </div>
+                                <h3
+                                    style={{
+                                        margin: "0 0 10px",
+                                        fontSize: isMobile ? 16 : 18,
+                                        fontWeight: 700,
+                                        color: C.text,
+                                        letterSpacing: "-0.02em",
+                                        minHeight: isMobile ? "auto" : "2.4em",
+                                        lineHeight: 1.2,
+                                    }}
+                                >
+                                    <MixedText dir={dir}>{work.title}</MixedText>
+                                </h3>
+                                <p
+                                    style={{
+                                        margin: "0 0 14px",
+                                        fontSize: 13,
+                                        lineHeight: 1.55,
+                                        color: C.textDim,
+                                        fontWeight: 300,
+                                        fontFamily: FONT_BODY,
+                                        flex: 1,
+                                        display: "-webkit-box",
+                                        WebkitLineClamp: 4,
+                                        WebkitBoxOrient: "vertical",
+                                        overflow: "hidden",
+                                    }}
+                                >
+                                    <MixedText dir={dir}>{work.summary}</MixedText>
+                                </p>
+                                <span
+                                    style={{
+                                        fontSize: 10,
+                                        color: C.orange,
+                                        letterSpacing: "0.2em",
+                                        marginTop: "auto",
+                                    }}
+                                >
+                                    {t("works.open")}
+                                </span>
+                            </div>
+                        </button>
+                    </Reveal>
+                ))}
+            </div>
+        </section>
+    );
+}
+
+// ============================================================================
+// COMPONENT: PROJECT DETAIL (full-page work view)
+// ============================================================================
+function ProjectDetail({ work, onBack, muted, isMobile }) {
+    const { t, dir } = useLanguage();
+
+    useEffect(() => {
+        window.scrollTo(0, 0);
+        const onKey = (e) => e.key === "Escape" && onBack();
+        window.addEventListener("keydown", onKey);
+        return () => window.removeEventListener("keydown", onKey);
+    }, [onBack]);
+
+    if (!work) return null;
+
+    const mediaSlots = work.media?.length ? work.media : [null, null, null];
+
+    return (
+        <div
+            style={{
+                minHeight: "100vh",
+                background: C.bg,
+                paddingTop: isMobile ? 72 : 88,
+                paddingBottom: isMobile ? 48 : 80,
+            }}
+        >
+            <div
+                style={{
+                    maxWidth: 960,
+                    margin: "0 auto",
+                    padding: isMobile ? "0 16px" : "0 32px",
+                }}
+            >
+                <button
+                    type="button"
+                    onClick={() => {
+                        SFX.close(muted);
+                        onBack();
+                    }}
+                    className="mono"
+                    style={{
+                        background: "transparent",
+                        border: `1px solid ${C.border}`,
+                        color: C.orange,
+                        padding: "10px 18px",
+                        fontSize: 10,
+                        letterSpacing: "0.2em",
+                        cursor: "pointer",
+                        marginBottom: 32,
+                    }}
+                >
+                    <MixedText dir={dir}>{t("works.back")}</MixedText>
+                </button>
+
+                <div
+                    className="mono"
+                    style={{
+                        fontSize: 10,
+                        color: C.cyan,
+                        letterSpacing: "0.25em",
+                        marginBottom: 10,
+                    }}
+                >
+                    <LtrSpan block>{work.platform}</LtrSpan>
+                </div>
+
+                <h1
+                    className="mono"
+                    style={{
+                        margin: "0 0 20px",
+                        fontSize: isMobile ? 28 : 42,
+                        fontWeight: 700,
+                        letterSpacing: "-0.03em",
+                        lineHeight: 1.05,
+                    }}
+                >
+                    <MixedText dir={dir}>{work.title}</MixedText>
+                </h1>
+
+                <p
+                    style={{
+                        fontSize: isMobile ? 15 : 17,
+                        lineHeight: 1.7,
+                        color: C.textDim,
+                        fontWeight: 300,
+                        margin: "0 0 36px",
+                        maxWidth: 720,
+                    }}
+                >
+                    <MixedText dir={dir}>{work.summary}</MixedText>
+                </p>
+
+                <div
+                    style={{
+                        display: "grid",
+                        gridTemplateColumns: isMobile ? "1fr" : "1fr 1fr",
+                        gap: 16,
+                        marginBottom: 36,
+                    }}
+                >
+                    {mediaSlots.map((item, i) => (
+                        <div
+                            key={i}
+                            style={{
+                                aspectRatio: "16 / 10",
+                                border: `1px dashed ${C.border}`,
+                                background: `linear-gradient(180deg, rgba(30,136,229,0.04), rgba(10,14,20,0.9))`,
+                                display: "flex",
+                                flexDirection: "column",
+                                alignItems: "center",
+                                justifyContent: "center",
+                                gap: 8,
+                                gridColumn: !isMobile && i === 0 ? "1 / -1" : undefined,
+                            }}
+                        >
+                            {item ? (
+                                item.type === "video" ? (
+                                    <video src={item.src} controls style={{ width: "100%", height: "100%", objectFit: "cover" }} />
+                                ) : (
+                                    <img src={item.src} alt="" style={{ width: "100%", height: "100%", objectFit: "cover" }} />
+                                )
+                            ) : (
+                                <>
+                                    <span
+                                        className="mono"
+                                        style={{ fontSize: 10, color: C.textDim, letterSpacing: "0.2em" }}
+                                    >
+                                        {t("works.mediaSlot")}_{String(i + 1).padStart(2, "0")}
+                                    </span>
+                                    <span
+                                        className="mono"
+                                        style={{ fontSize: 9, color: C.cyan, letterSpacing: "0.15em", opacity: 0.6 }}
+                                    >
+                                        {t("works.noMedia")}
+                                    </span>
+                                </>
+                            )}
+                        </div>
+                    ))}
+                </div>
+
+                <p
+                    style={{
+                        fontSize: 15,
+                        lineHeight: 1.75,
+                        color: C.text,
+                        fontWeight: 300,
+                        margin: "0 0 32px",
+                    }}
+                >
+                    <MixedText dir={dir}>{work.body}</MixedText>
+                </p>
+
+                <div
+                    className="mono"
+                    style={{
+                        fontSize: 10,
+                        color: C.textDim,
+                        letterSpacing: "0.2em",
+                        marginBottom: 12,
+                    }}
+                >
+                    {t("works.stack")}
+                </div>
+                <div style={{ display: "flex", flexWrap: "wrap", gap: 8, marginBottom: work.github ? 28 : 0 }}>
+                    {work.stack.map((s) => (
+                        <span
+                            key={s}
+                            className="mono"
+                            style={{
+                                fontSize: 11,
+                                padding: "6px 12px",
+                                border: `1px solid ${C.border}`,
+                                color: C.cyan,
+                                letterSpacing: "0.1em",
+                            }}
+                        >
+                            <LtrSpan block>{s}</LtrSpan>
+                        </span>
+                    ))}
+                </div>
+
+                {work.github && (
+                    <a
+                        href={work.github}
+                        target="_blank"
+                        rel="noopener noreferrer"
+                        className="mono"
+                        onClick={() => SFX.click(muted)}
+                        style={{
+                            display: "inline-block",
+                            background: C.cyan,
+                            color: C.bg,
+                            border: "none",
+                            padding: "12px 24px",
+                            fontSize: 11,
+                            letterSpacing: "0.2em",
+                            fontWeight: 700,
+                            textDecoration: "none",
+                            cursor: "pointer",
+                        }}
+                    >
+                        {t("works.github")}
+                    </a>
+                )}
+            </div>
+        </div>
+    );
+}
+
+// ============================================================================
 // COMPONENT: CONTACT (with pointing avatar)
 // ============================================================================
 function Contact({ mouseRef, muted, isMobile }) {
@@ -2291,7 +2725,7 @@ function Contact({ mouseRef, muted, isMobile }) {
         >
             <Reveal variant="glitch">
                 <SectionHeader
-                    number="04"
+                    number="05"
                     title={t("contact.title")}
                     subtitle={t("contact.subtitle")}
                 />
@@ -3231,7 +3665,7 @@ function Arcade({ onClose, muted, isMobile, embedded = false }) {
                 >
                     <Reveal variant="glitch">
                         <SectionHeader
-                            number="05"
+                            number="06"
                             title={t("arcade.title")}
                             subtitle={t("arcade.subtitle")}
                         />
@@ -3849,7 +4283,21 @@ export default function App() {
     const mouseRef = useMouse();
     const [muted, setMuted] = useState(true);
     const [activeProject, setActiveProject] = useState(null);
+    const [activeWork, setActiveWork] = useState(null);
     const isMobile = useIsMobile();
+
+    const openWork = useCallback((work) => {
+        setActiveWork(work);
+    }, []);
+
+    const closeWork = useCallback(() => {
+        setActiveWork(null);
+        requestAnimationFrame(() => scrollToId("projects"));
+    }, []);
+
+    const handleNavigate = useCallback((id) => {
+        if (activeWork) setActiveWork(null);
+    }, [activeWork]);
 
     return (
         <div style={{ background: C.bg, minHeight: "100vh", color: C.text, overflowX: "clip", maxWidth: "100%", width: "100%", position: "relative" }}>
@@ -3869,13 +4317,25 @@ export default function App() {
                 }}
             />
             <GlobalStyles />
-            <NavBar muted={muted} setMuted={setMuted} isMobile={isMobile} />
-            <Hero mouseRef={mouseRef} isMobile={isMobile} />
-            <About muted={muted} isMobile={isMobile} />
-            <Portfolio onOpen={setActiveProject} muted={muted} isMobile={isMobile} />
-            <Contact mouseRef={mouseRef} muted={muted} isMobile={isMobile} />
-            <Arcade embedded muted={muted} isMobile={isMobile} />
-            <Footer />
+            <NavBar muted={muted} setMuted={setMuted} isMobile={isMobile} onNavigate={handleNavigate} />
+            {activeWork ? (
+                <ProjectDetail
+                    work={activeWork}
+                    onBack={closeWork}
+                    muted={muted}
+                    isMobile={isMobile}
+                />
+            ) : (
+                <>
+                    <Hero mouseRef={mouseRef} isMobile={isMobile} muted={muted} />
+                    <About muted={muted} isMobile={isMobile} />
+                    <Portfolio onOpen={setActiveProject} muted={muted} isMobile={isMobile} />
+                    <Works onOpen={openWork} muted={muted} isMobile={isMobile} />
+                    <Contact mouseRef={mouseRef} muted={muted} isMobile={isMobile} />
+                    <Arcade embedded muted={muted} isMobile={isMobile} />
+                    <Footer />
+                </>
+            )}
             <ProjectModal
                 project={activeProject}
                 onClose={() => setActiveProject(null)}

@@ -126,6 +126,7 @@ export default function LoadingScreen({
                                 height: "100%",
                                 objectFit: "contain",
                                 display: "block",
+                                mixBlendMode: "lighten",
                             }}
                         />
                     ) : (
