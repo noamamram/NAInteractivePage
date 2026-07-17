@@ -2329,7 +2329,9 @@ function Works({ onOpen, muted, isMobile }) {
                                     height: isMobile ? 140 : 160,
                                     flexShrink: 0,
                                     borderBottom: `1px dashed ${C.border}`,
-                                    background: `linear-gradient(135deg, ${C.brandDark} 0%, rgba(30,136,229,0.06) 100%)`,
+                                    background: work.cover
+                                        ? "#0a0e14"
+                                        : `linear-gradient(135deg, ${C.brandDark} 0%, rgba(30,136,229,0.06) 100%)`,
                                     display: "flex",
                                     alignItems: "center",
                                     justifyContent: "center",
@@ -2337,15 +2339,29 @@ function Works({ onOpen, muted, isMobile }) {
                                     overflow: "hidden",
                                 }}
                             >
-                                <div
-                                    style={{
-                                        fontSize: 10,
-                                        letterSpacing: "0.25em",
-                                        color: C.textDim,
-                                    }}
-                                >
-                                    {t("works.noMedia")}
-                                </div>
+                                {work.cover ? (
+                                    <img
+                                        src={work.cover}
+                                        alt=""
+                                        draggable={false}
+                                        style={{
+                                            width: "100%",
+                                            height: "100%",
+                                            objectFit: "cover",
+                                            display: "block",
+                                        }}
+                                    />
+                                ) : (
+                                    <div
+                                        style={{
+                                            fontSize: 10,
+                                            letterSpacing: "0.25em",
+                                            color: C.textDim,
+                                        }}
+                                    >
+                                        {t("works.noMedia")}
+                                    </div>
+                                )}
                                 <div
                                     style={{
                                         position: "absolute",
@@ -2445,7 +2461,7 @@ function ProjectDetail({ work, onBack, muted, isMobile }) {
 
     if (!work) return null;
 
-    const mediaSlots = work.media?.length ? work.media : [null, null, null];
+    const mediaItems = work.media?.length ? work.media : [];
 
     return (
         <div
@@ -2522,6 +2538,7 @@ function ProjectDetail({ work, onBack, muted, isMobile }) {
                     <MixedText dir={dir}>{work.summary}</MixedText>
                 </p>
 
+                {mediaItems.length > 0 && (
                 <div
                     style={{
                         display: "grid",
@@ -2530,46 +2547,37 @@ function ProjectDetail({ work, onBack, muted, isMobile }) {
                         marginBottom: 36,
                     }}
                 >
-                    {mediaSlots.map((item, i) => (
+                    {mediaItems.map((item, i) => (
                         <div
-                            key={i}
+                            key={`${item.type}-${i}-${item.src}`}
                             style={{
-                                aspectRatio: "16 / 10",
-                                border: `1px dashed ${C.border}`,
-                                background: `linear-gradient(180deg, rgba(30,136,229,0.04), rgba(10,14,20,0.9))`,
-                                display: "flex",
-                                flexDirection: "column",
-                                alignItems: "center",
-                                justifyContent: "center",
-                                gap: 8,
-                                gridColumn: !isMobile && i === 0 ? "1 / -1" : undefined,
+                                aspectRatio: "16 / 9",
+                                border: `1px solid ${C.border}`,
+                                background: "#05080c",
+                                overflow: "hidden",
+                                gridColumn: !isMobile && item.type === "video" ? "1 / -1" : undefined,
                             }}
                         >
-                            {item ? (
-                                item.type === "video" ? (
-                                    <video src={item.src} controls style={{ width: "100%", height: "100%", objectFit: "cover" }} />
-                                ) : (
-                                    <img src={item.src} alt="" style={{ width: "100%", height: "100%", objectFit: "cover" }} />
-                                )
+                            {item.type === "video" ? (
+                                <video
+                                    src={item.src}
+                                    controls
+                                    playsInline
+                                    preload="metadata"
+                                    style={{ width: "100%", height: "100%", objectFit: "cover", display: "block" }}
+                                />
                             ) : (
-                                <>
-                                    <span
-                                        className="mono"
-                                        style={{ fontSize: 10, color: C.textDim, letterSpacing: "0.2em" }}
-                                    >
-                                        {t("works.mediaSlot")}_{String(i + 1).padStart(2, "0")}
-                                    </span>
-                                    <span
-                                        className="mono"
-                                        style={{ fontSize: 9, color: C.cyan, letterSpacing: "0.15em", opacity: 0.6 }}
-                                    >
-                                        {t("works.noMedia")}
-                                    </span>
-                                </>
+                                <img
+                                    src={item.src}
+                                    alt=""
+                                    loading="lazy"
+                                    style={{ width: "100%", height: "100%", objectFit: "cover", display: "block" }}
+                                />
                             )}
                         </div>
                     ))}
                 </div>
+                )}
 
                 <p
                     style={{

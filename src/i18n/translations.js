@@ -629,12 +629,18 @@ export const translations = {
     },
 };
 
+import { getWorkMedia } from "../worksMedia";
+
 export function getProjects(lang) {
     return translations[lang]?.projects ?? translations.en.projects;
 }
 
 export function getWorks(lang) {
-    return translations[lang]?.worksList ?? translations.en.worksList;
+    const list = translations[lang]?.worksList ?? translations.en.worksList;
+    return list.map((work) => {
+        const { cover, media } = getWorkMedia(work.id);
+        return { ...work, cover, media };
+    });
 }
 
 export function getSkills(lang) {
