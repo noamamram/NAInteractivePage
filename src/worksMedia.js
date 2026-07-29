@@ -85,19 +85,27 @@ export const WORKS_MEDIA = {
         ]
     },
     "iron-word": {
-        "cover": "/projectImagesAndVideos/Iron%20Word/magnific_a-cinematic-gameplay-scre_l7xGaYMgv9.png",
+        "cover": "/projectImagesAndVideos/Iron%20Word/%D7%A6%D7%99%D7%9C%D7%95%D7%9D%20%D7%9E%D7%A1%D7%9A%202026-07-29%20161047.png",
         "media": [
             {
-                "type": "image",
-                "src": "/projectImagesAndVideos/Iron%20Word/magnific_a-cinematic-gameplay-scre_l7xGaYMgv9.png"
+                "type": "video",
+                "src": "/projectImagesAndVideos/Iron%20Word/IRONWORD.mp4"
             },
             {
                 "type": "image",
-                "src": "/projectImagesAndVideos/Iron%20Word/magnific_a-cinematic-thirdperson-g_43JDFfh9Aa.png"
+                "src": "/projectImagesAndVideos/Iron%20Word/%D7%A6%D7%99%D7%9C%D7%95%D7%9D%20%D7%9E%D7%A1%D7%9A%202026-07-29%20161047.png"
             },
             {
                 "type": "image",
-                "src": "/projectImagesAndVideos/Iron%20Word/magnific_a-cinematic-thirdperson-g_KjHNnX0kqp.png"
+                "src": "/projectImagesAndVideos/Iron%20Word/%D7%A6%D7%99%D7%9C%D7%95%D7%9D%20%D7%9E%D7%A1%D7%9A%202026-07-29%20161244.png"
+            },
+            {
+                "type": "image",
+                "src": "/projectImagesAndVideos/Iron%20Word/%D7%A6%D7%99%D7%9C%D7%95%D7%9D%20%D7%9E%D7%A1%D7%9A%202026-07-29%20161308.png"
+            },
+            {
+                "type": "image",
+                "src": "/projectImagesAndVideos/Iron%20Word/%D7%A6%D7%99%D7%9C%D7%95%D7%9D%20%D7%9E%D7%A1%D7%9A%202026-07-29%20161331.png"
             }
         ]
     },

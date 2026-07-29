@@ -2291,11 +2291,19 @@ function Works({ onOpen, muted, isMobile }) {
                         delay={Math.min(i * 60, 240)}
                         style={{ height: "100%" }}
                     >
-                        <button
-                            type="button"
+                        <div
+                            role="button"
+                            tabIndex={0}
                             onClick={() => {
                                 SFX.open(muted);
                                 onOpen(work);
+                            }}
+                            onKeyDown={(e) => {
+                                if (e.key === "Enter" || e.key === " ") {
+                                    e.preventDefault();
+                                    SFX.open(muted);
+                                    onOpen(work);
+                                }
                             }}
                             className="mono"
                             style={{
@@ -2377,6 +2385,32 @@ function Works({ onOpen, muted, isMobile }) {
                                 >
                                     <LtrSpan block>{work.platform}</LtrSpan>
                                 </div>
+                                {work.itch && (
+                                    <a
+                                        href={work.itch}
+                                        target="_blank"
+                                        rel="noopener noreferrer"
+                                        onClick={(e) => {
+                                            e.stopPropagation();
+                                            SFX.click(muted);
+                                        }}
+                                        style={{
+                                            position: "absolute",
+                                            top: 10,
+                                            right: 10,
+                                            fontSize: 9,
+                                            color: C.bg,
+                                            letterSpacing: "0.18em",
+                                            padding: "4px 8px",
+                                            border: `1px solid ${C.warm}`,
+                                            background: C.warm,
+                                            fontWeight: 700,
+                                            textDecoration: "none",
+                                        }}
+                                    >
+                                        <LtrSpan block>{t("works.playable")}</LtrSpan>
+                                    </a>
+                                )}
                             </div>
                             <div
                                 style={{
@@ -2427,18 +2461,49 @@ function Works({ onOpen, muted, isMobile }) {
                                 >
                                     <MixedText dir={dir}>{work.summary}</MixedText>
                                 </p>
-                                <span
+                                <div
                                     style={{
-                                        fontSize: 10,
-                                        color: C.orange,
-                                        letterSpacing: "0.2em",
+                                        display: "flex",
+                                        alignItems: "center",
+                                        justifyContent: "space-between",
+                                        gap: 12,
                                         marginTop: "auto",
+                                        flexWrap: "wrap",
                                     }}
                                 >
-                                    {t("works.open")}
-                                </span>
+                                    {work.itch && (
+                                        <a
+                                            href={work.itch}
+                                            target="_blank"
+                                            rel="noopener noreferrer"
+                                            onClick={(e) => {
+                                                e.stopPropagation();
+                                                SFX.click(muted);
+                                            }}
+                                            style={{
+                                                fontSize: 10,
+                                                color: C.warm,
+                                                letterSpacing: "0.18em",
+                                                fontWeight: 700,
+                                                textDecoration: "none",
+                                            }}
+                                        >
+                                            <LtrSpan block>{t("works.itch")}</LtrSpan>
+                                        </a>
+                                    )}
+                                    <span
+                                        style={{
+                                            fontSize: 10,
+                                            color: C.orange,
+                                            letterSpacing: "0.2em",
+                                            marginInlineStart: "auto",
+                                        }}
+                                    >
+                                        {t("works.open")}
+                                    </span>
+                                </div>
                             </div>
-                        </button>
+                        </div>
                     </Reveal>
                 ))}
             </div>
@@ -2501,15 +2566,40 @@ function ProjectDetail({ work, onBack, muted, isMobile }) {
                 </button>
 
                 <div
-                    className="mono"
                     style={{
-                        fontSize: 10,
-                        color: C.cyan,
-                        letterSpacing: "0.25em",
+                        display: "flex",
+                        flexWrap: "wrap",
+                        alignItems: "center",
+                        gap: 10,
                         marginBottom: 10,
                     }}
                 >
-                    <LtrSpan block>{work.platform}</LtrSpan>
+                    <div
+                        className="mono"
+                        style={{
+                            fontSize: 10,
+                            color: C.cyan,
+                            letterSpacing: "0.25em",
+                        }}
+                    >
+                        <LtrSpan block>{work.platform}</LtrSpan>
+                    </div>
+                    {work.itch && (
+                        <div
+                            className="mono"
+                            style={{
+                                fontSize: 9,
+                                color: C.bg,
+                                letterSpacing: "0.18em",
+                                padding: "4px 8px",
+                                border: `1px solid ${C.warm}`,
+                                background: C.warm,
+                                fontWeight: 700,
+                            }}
+                        >
+                            <LtrSpan block>{t("works.playable")}</LtrSpan>
+                        </div>
+                    )}
                 </div>
 
                 <h1
@@ -2602,7 +2692,14 @@ function ProjectDetail({ work, onBack, muted, isMobile }) {
                 >
                     {t("works.stack")}
                 </div>
-                <div style={{ display: "flex", flexWrap: "wrap", gap: 8, marginBottom: work.github ? 28 : 0 }}>
+                <div
+                    style={{
+                        display: "flex",
+                        flexWrap: "wrap",
+                        gap: 8,
+                        marginBottom: work.github || work.itch ? 28 : 0,
+                    }}
+                >
                     {work.stack.map((s) => (
                         <span
                             key={s}
@@ -2620,28 +2717,55 @@ function ProjectDetail({ work, onBack, muted, isMobile }) {
                     ))}
                 </div>
 
-                {work.github && (
-                    <a
-                        href={work.github}
-                        target="_blank"
-                        rel="noopener noreferrer"
-                        className="mono"
-                        onClick={() => SFX.click(muted)}
-                        style={{
-                            display: "inline-block",
-                            background: C.cyan,
-                            color: C.bg,
-                            border: "none",
-                            padding: "12px 24px",
-                            fontSize: 11,
-                            letterSpacing: "0.2em",
-                            fontWeight: 700,
-                            textDecoration: "none",
-                            cursor: "pointer",
-                        }}
-                    >
-                        {t("works.github")}
-                    </a>
+                {(work.itch || work.github) && (
+                    <div style={{ display: "flex", flexWrap: "wrap", gap: 12 }}>
+                        {work.itch && (
+                            <a
+                                href={work.itch}
+                                target="_blank"
+                                rel="noopener noreferrer"
+                                className="mono"
+                                onClick={() => SFX.click(muted)}
+                                style={{
+                                    display: "inline-block",
+                                    background: C.warm,
+                                    color: C.bg,
+                                    border: "none",
+                                    padding: "12px 24px",
+                                    fontSize: 11,
+                                    letterSpacing: "0.2em",
+                                    fontWeight: 700,
+                                    textDecoration: "none",
+                                    cursor: "pointer",
+                                }}
+                            >
+                                {t("works.itch")}
+                            </a>
+                        )}
+                        {work.github && (
+                            <a
+                                href={work.github}
+                                target="_blank"
+                                rel="noopener noreferrer"
+                                className="mono"
+                                onClick={() => SFX.click(muted)}
+                                style={{
+                                    display: "inline-block",
+                                    background: C.cyan,
+                                    color: C.bg,
+                                    border: "none",
+                                    padding: "12px 24px",
+                                    fontSize: 11,
+                                    letterSpacing: "0.2em",
+                                    fontWeight: 700,
+                                    textDecoration: "none",
+                                    cursor: "pointer",
+                                }}
+                            >
+                                {t("works.github")}
+                            </a>
+                        )}
+                    </div>
                 )}
             </div>
         </div>

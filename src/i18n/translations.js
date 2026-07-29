@@ -68,6 +68,8 @@ export const translations = {
             platform: "PLATFORM",
             stack: "// STACK",
             github: "⎇ GITHUB ↗",
+            playable: "▶ PLAYABLE",
+            itch: "▶ PLAY ON ITCH.IO ↗",
         },
         worksList: [
             {
@@ -125,6 +127,7 @@ export const translations = {
                 body:
                     "Educational PC game developed in military service to raise blind typing speed without looking at the keyboard. You defend as Iron Dome: waves of incoming missiles each map to a letter in the active language. Press the matching key to launch a missile and destroy it. Difficulty ramps with more missiles and faster typing — supporting multiple languages for progressive drills.",
                 stack: ["Unity", "C#", "Educational Games", "Localization", "UI", "Game Design"],
+                itch: "https://noamamram.itch.io/ironword",
                 media: [],
             },
             {
@@ -382,6 +385,8 @@ export const translations = {
             platform: "פלטפורמה",
             stack: "// מחסנית",
             github: "⎇ GITHUB ↗",
+            playable: "▶ ניתן לשחק",
+            itch: "▶ שחק ב־ITCH.IO ↗",
         },
         worksList: [
             {
@@ -439,6 +444,7 @@ export const translations = {
                 body:
                     "משחק מחשב לימודי שפיתחתי בצבא לשיפור מהירות הקלדה בלי להסתכל על המקלדת. משחקים כיפת ברזל: גלים של טילים שכל אחד ממופה לאות בשפה הרלוונטית. לחיצה על האות שולחת מיירט ומפוצצת את הטיל. ככל שהמשחק מתקדם יש יותר טילים וצריך להקליד מהר יותר — עם תמיכה בשפות שונות.",
                 stack: ["Unity", "C#", "Educational Games", "Localization", "UI", "Game Design"],
+                itch: "https://noamamram.itch.io/ironword",
                 media: [],
             },
             {
